@@ -1,38 +1,57 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity } from 'react-native';
+import axios from 'axios';
+import { useState } from 'react';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
 export default function App() {
+  const [nombre, setnombre]= useState('');
+  const [Contrasena, setcontrasena]= useState('');
+  const [correo, setcorreo]= useState('');
+  const registrouser=()=>{
+    axios.post("https://47cb-2806-105e-2b-accf-e1e4-4dbf-7e77-5557.ngrok-free.app/api_res/", {
+      password:Contrasena,
+      nombre_user:nombre,
+      correo_user:correo,
+    }).then(function(respuesta){
+    console.log(  respuesta.data);
+    }).catch(function(err){
+      console.log(err);
+    })
+  }
   return (
     <View style={styles.container}>
       <View style={styles.bolitas1}></View>
-      
-      <View style={styles.bolitas2}></View>
-      
-      <MaterialCommunityIcons name="account-circle" size={50} color="rgb(75, 0, 155)" />
-    <Text style={styles.text}>
+      <MaterialCommunityIcons name="account-circle" size={50} color="green" />
 
-      Login
+      <View style={styles.bolitas2}></View>
+    <Text style={styles.text}>
+      Registrate
       </Text>
     <View  style={styles.contenedor1}>
-      <TouchableOpacity style={styles.buttonsigiente}>
-        <Text style={styles.text2}>→</Text>
+      <TouchableOpacity onPress={registrouser} style={styles.buttonsigiente}>
+        <Text style={styles.text2}>✓</Text>
       </TouchableOpacity>
    <View style={styles.children1}>
-
-        <MaterialCommunityIcons  name='account' size={35} color="black"/>
-     <TextInput placeholder='Nombre de usuario' style={styles.textinput} />
+    <MaterialCommunityIcons  name='account' size={35} color="black"/>
+     <TextInput placeholder='Nombre de usuario' onChangeText={setnombre} style={styles.textinput} />
    </View>
-   <View style={styles.children2}>
-      <MaterialCommunityIcons name="eye" size={35} color="black" />
-    <TextInput placeholder='Contraseña' style={styles.textinput} />
+   <View style={styles.children3}>
+   <MaterialCommunityIcons name="eye" size={35} color="black" />
+
+    <TextInput placeholder='Contraseña' onChangeText={setcontrasena} style={styles.textinput} />
     
    </View>
-   <TouchableOpacity style={styles.botonregistrate2}>
-        <Text style={styles.text4}>¿Perdiste tu Contraseña?</Text>
-      </TouchableOpacity>
+   
+   <View style={styles.children2}>
+   <MaterialCommunityIcons name="gmail" size={35} color="black" />
+
+    <TextInput placeholder='Gmail' onChangeText={setcorreo} style={styles.textinput} />
+    
+   </View>
     </View>
     <TouchableOpacity style={styles.botonregistrate}>
-        <Text style={styles.text3}>Registrate</Text>
+        <Text style={styles.text3}>Login</Text>
       </TouchableOpacity>
       <View style={styles.bolitas3}></View>
       
@@ -46,26 +65,32 @@ const styles = StyleSheet.create({
   bolitas1:{
 width:200,
 height:200,
-backgroundColor:"rgba(29, 177, 229, 6)",
+backgroundColor:"rgba(245, 110, 57, 1)",
 position:"absolute",
 top:0,
 left:0,
 borderBottomEndRadius:300,
 zIndex:2,
+
   },
   bolitas2:{
     width:200,
     height:200,
-    backgroundColor:"rgba(71, 186, 227, 6)",
+    backgroundColor:"rgba(255, 72, 0, 1)",
     position:"absolute",
     top:-80,
     left:150,
     borderBottomEndRadius:300,
       },
+      children3:{
+        padding:5,
+        display: "flex",
+        flexDirection:"row",
+      },
       bolitas4:{
         width:200,
         height:200,
-        backgroundColor:"rgba(29, 177, 229, 6)",
+        backgroundColor:"rgba(245, 110, 57, 1)",
         position:"absolute",
         bottom:0,
         right:0,
@@ -74,32 +99,23 @@ zIndex:2,
           bolitas3:{
             width:200,
             height:200,
-            backgroundColor:"rgba(71, 186, 227, 6)",
+            backgroundColor:"rgba(255, 72, 0, 1)",
             position:"absolute",
             
             bottom:-80,
             right:150,
             borderTopLeftRadius:300,
               },
-  botonregistrate2:{
-    width:"45%",
-    marginLeft:"50%",
-    marginTop:10,
-transform: [{ translateX: -50 }, { translateY: -0 }],
-  },
-  text4:{
-
-color:"rgba(185, 185, 185, 6)",
-fontWeight:600
-  },
+ 
   botonregistrate:{
     position:"absolute",
-    top:"75%",
+    bottom:"75%",
     padding:10,
-    borderEndEndRadius:20,
-    borderTopEndRadius:20,
-    left:0,
-boxShadow: "1 2 5 2 rgba(44, 44, 44, 0.6)"
+    borderBottomLeftRadius:20,
+    borderTopLeftRadius:20,
+    left:"100%",
+boxShadow: "1 2 5 2 rgba(44, 44, 44, 0.6)",
+transform:[{translateX:"-100%"}, {translateY:0}]
   },
   text3:{
 fontSize:20, 
@@ -108,7 +124,7 @@ fontWeight:500
   },
 
   buttonsigiente:{
-backgroundColor:"rgba(161, 180, 255, 1)",
+backgroundColor:"rgba(255, 195, 107, 1)",
 borderRadius:50,
 width:"20%",
 position:"absolute",
@@ -119,21 +135,21 @@ transform: [{ translateX: -95 }, { translateY: -50 }]
   },
   children1:{
     
-display:"flex",
-flexDirection:"row",
-padding:5,
+    padding:5,
+    display: "flex",
+    flexDirection:"row",
 width:"80%",
 borderTopEndRadius:20,
-boxShadow: "1 -2 5 2 rgba(44, 44, 44, 0.6)"
+boxShadow: "0 -3 4 2 rgba(44, 44, 44, 0.3)"
   }, 
-
   children2:{
+
     padding:5,
-display:"flex",
-flexDirection:"row",
+    display: "flex",
+    flexDirection:"row",
     width:"80%",
     borderEndEndRadius:20,
-    boxShadow: "1 2 5 2 rgba(44, 44, 44, 0.6)"
+boxShadow: "0 3 4 2 rgba(44, 44, 44, 0.3)"
       },
 
   contenedor1:{
