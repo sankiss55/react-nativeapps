@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Alert, StatusBar,Animated } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -8,6 +7,10 @@ import DateTimePicker from 'react-native-modal-datetime-picker';
 import * as SQLite from 'expo-sqlite';
 import { Switch } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
+import * as Notifications from 'expo-notifications';
+import { BackHandler } from 'react-native';
+import { Platform, Linking } from 'react-native';
+
 const bd=SQLite.openDatabaseSync('despertador.db');
 export default function Alarma() {
   const [time, setTime] = useState(new Date());
@@ -16,7 +19,41 @@ export default function Alarma() {
   const [estado_alarma, setestado_alarma]=useState([]);
   const [estado_alarma_agrandar_componente, setestado_alarma_agrandar_componente]=useState({});
   const [consultabd, setconsultabd]=useState([]);
+  const [activa_ventana, setventana_activa] =useState(false);
+  function salir_app(){
+    BackHandler.exitApp();
+  }
 
+  async function Notificaciones_permisos() {
+    console.log("Botón presionado, verificando permisos...");
+    try {
+      const { status } = await Notifications.requestPermissionsAsync();
+  
+      console.log("Estado de los permisos:", status);
+  
+      if (status !== 'granted') {
+        setventana_activa(true);
+        return false;
+      }
+      setventana_activa(false);
+      return true;
+    } catch (error) {
+      console.error("Error al verificar permisos:", error);
+      return false;
+    }
+  }
+  
+  
+function permisos_configuracion(){
+    setventana_activa(true);
+    if (Platform.OS === 'android') {
+      Linking.openSettings(); // Android debería funcionar bien con esta URL
+      
+    } else {
+      Linking.openURL('app-settings://'); // Asegúrate de que el esquema sea correcto para iOS
+    }
+    Notificaciones_permisos();
+}
 function eliminar_alarma(id){
 console.log(id);
 bd.execAsync(`Delete from alarmas where id=${id}`).then(function(respuesta){
@@ -97,8 +134,16 @@ console.log(err);
     let traerdia=new Date().getDay();
     console.log(traerdia);
       bd.execAsync(`INSERT INTO alarmas(hora,activo, lunes,martes,miercoles,jueves,viernes,sabado,domingo) VALUES('${hora>12? hora-12: hora}:${fecha==''? '00' : fecha} ${hora>=12 ? 'PM' : 'AM'}', 1,${traerdia==1?1:0},${traerdia==2?1:0},${traerdia==3?1:0},${traerdia==4?1:0},${traerdia==5?1:0},${traerdia==6?1:0},${traerdia==7?1:0})`)
-      .then(function() {
+      .then( async function() {
           console.log('ejecucion exitosa');
+          await notifee.displayNotification({
+            title: 'Nuevo mensaje',
+            body: 'Tienes un nuevo mensaje en WhatsApp',
+            android: {
+              channelId: 'default',
+              smallIcon: 'ic_launcher',
+            },
+          });
           Toast.show({
             position:'top',
             
@@ -116,6 +161,9 @@ console.log(err);
   
   }
   useEffect(function(){
+    
+    Notificaciones_permisos();
+
  bd.execAsync(`
   CREATE TABLE IF NOT EXISTS alarmas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -132,10 +180,41 @@ console.log(err);
   },[]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'rgba(53,22,143,255)' }}>
+    
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'rgba(53,22,143,255)', position:'relative' }}>
       <StatusBar barStyle='dark-content' backgroundColor="rgba(88,55,186,255)" translucent />
+      <View style={[styles.ventana_flotante, {display: activa_ventana==true?  'flex': 'none' }]}>
+        <View style={{backgroundColor:'white', position:'relative', borderRadius:20}}>
+        <View style={{ position:'absolute', zIndex: 99, backgroundColor:'white', borderRadius:10, padding:2, right:-10, top:-10 }}>
+        <TouchableOpacity onPress={salir_app} >
+          <Icon name="close-circle-outline" size={30} style={{ color: 'red', width: 30, height: 30 }} />
+          </TouchableOpacity>
+        </View>
+        <Text style={{backgroundColor:'red',  borderTopEndRadius:20, borderTopLeftRadius:20,textAlign:'center', padding:10, color:'white'}}>
+    Error de permisos
+  </Text>
+  <Text style={{textAlign:'center',padding:10}}>
+    Es importante otorgar perminos
+  </Text>
+ <View style={{display:'flex', justifyContent:'center', alignItems:'center', flexDirection:'row', borderBottomEndRadius:20, borderBottomLeftRadius:20, padding:10, backgroundColor: 'rgb(236, 236, 236)', gap:20}}>
+ <TouchableOpacity onPress={permisos_configuracion}  style={[styles.botones, { backgroundColor: 'rgb(102, 104, 231)' }]}>
 
-      <View style={{ flexDirection: 'row', backgroundColor: 'rgba(146,106,255,255)', padding: 10, marginTop: StatusBar.currentHeight }}>
+    <Text style={{
+    color:'white'}}>
+      Intentar de Nuevo
+    </Text>
+  </TouchableOpacity>
+  <TouchableOpacity onPress={salir_app} style={[styles.botones, { backgroundColor: 'red' }]}>
+    <Text style={{
+    color:'white'}}>
+      Salir
+    </Text>
+  </TouchableOpacity>
+ </View>
+ </View>
+</View>
+      <View style={{ flexDirection: 'row', backgroundColor:  'rgba(146,106,255,255)', padding: 10, marginTop: StatusBar.currentHeight }}>
+      
         <View style={{ flex: 1 }}>
           <Text style={{ color: 'white', fontSize: 20 }}>Alarmas Santiago</Text>
         </View>
@@ -143,8 +222,9 @@ console.log(err);
           <Icon name='menu-outline' size={30} style={{ color: 'white' }} />
         </TouchableOpacity>
       </View>
-
-      <View style={{ flex: 1, padding: 2, position: 'relative' }}>
+     
+      <View style={{ flex: 1, padding: 2, position: 'relative',display: activa_ventana==true?  'none': 'flex'  }}>
+        
       <ScrollView style={{ backgroundColor: 'rgb(67, 0, 138)', flexDirection: 'column' }}>
   {consultabd.map((item) => (
     <Animated.View 
@@ -160,7 +240,7 @@ console.log(err);
     <TouchableOpacity style={{ width:'100%', height:'100%'}} onPress={() => click_contenedor(item.id)} >
       <View style={{alignItems:'flex-end'}}>
         <TouchableOpacity style={{width:40}}>
-          <Icon name='caret-down-circle-outline' size={30} style={{ color: 'white' }} />
+          <Icon name='caret-down-circle-outline' onPress={() => click_contenedor(item.id)} size={30} style={{ color: 'white' }} />
         </TouchableOpacity>
       </View>
       
@@ -211,6 +291,23 @@ console.log(err);
 }
 
 const styles = StyleSheet.create({
+  ventana_flotante:{
+    
+    width:'85%',
+position:'absolute', 
+marginLeft:'50%',
+marginTop:'100%',
+borderRadius:20,
+padding:30,
+transform:[{translateX:'-50%'}, {translateY:'-10%'}],
+zIndex:30,
+
+  },
+  botones:{
+    borderRadius:10, 
+    padding:10
+  },
+
   contenedor_alarma:{
     position:'relative',
      backgroundColor: 'rgba(146,106,255,255)', margin: 10, paddingTop:10, paddingBottom:10, paddingLeft:20, paddingRight:20, borderRadius: 20, height: 200, display:'flex'

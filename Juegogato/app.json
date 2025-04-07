@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "despertador",
-    "slug": "despertador",
+    "name": "Juegogato",
+    "slug": "Juegogato",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,28 +13,21 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
-      "notification": {
-        "sound": "./alarma.mp3"
-      },
-      "bundleIdentifier": "com.santiago-vs.despertador"
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "notification": {
-        "sound": "./alarma.mp3"
-      },
-      "package": "com.santiago_vs.despertador"
+      "package": "com.santiago_vs.Juegogato"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "8b4f7fda-a483-4b62-a60a-d061cbc55fd0"
+        "projectId": "5fd25840-ef2f-4925-8f62-cd5a109a73ef"
       }
     }
   }
