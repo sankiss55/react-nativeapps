@@ -1,7 +1,7 @@
 import { registerRootComponent } from 'expo';
 
 import App from './paginas/login/stack';
-
+//import App from './paginas/paginas_empleados/stack_empleados';
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
 // It also ensures that whether you load the app in Expo Go or in a native build,
 // the environment is set up appropriately

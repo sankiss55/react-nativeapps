@@ -1,12 +1,96 @@
-import React from "react";
+import React, { useState } from "react";
 import { StyleSheet, TextInput, View, Text, TouchableOpacity, Image } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Svg, Path } from 'react-native-svg';
 import { useNavigation } from "@react-navigation/native";
+import { ALERT_TYPE, AlertNotificationRoot, Toast } from "react-native-alert-notification";
+import firebaseConfig from "../../config_firebase/config";
+
+import { initializeApp } from "firebase/app";
+import {
+  getFirestore,
+  getDocs,
+  collection,
+  query,
+  where
+} from "firebase/firestore";
 export default function Login_admin() {
+  
+  const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
      const navigation = useNavigation();
+     const[usuario, setusuario]=useState("");
+      const[contrasena,setcontrasena]=useState("");
+
+    async function entrar_usuarios(){
+      if(usuario==='' || contrasena===''){
+        Toast.show({
+          type: ALERT_TYPE.WARNING,
+          title: 'Campos vacios',
+          textBody: 'Por favor llene todos los campos',
+          autoClose: 2000,
+          onHide: () => {
+              setusuario('');
+              setcontrasena('');
+          }
+      });
+      return;
+      }
+      
+  try {
+    const usuariosRef = collection(db, "usuarios"); 
+    const q = query(
+      usuariosRef,
+      where("usuario", "==", usuario),
+      where("password", "==", contrasena)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+       const userData = querySnapshot.docs[0].data(); 
+
+  const esAdmin = userData.campo === 'admin'; 
+
+      Toast.show({
+        type: ALERT_TYPE.SUCCESS,
+        title: 'Acceso permitido',
+        textBody: 'Bienvenido administrador',
+        autoClose: 1000,
+         onHide: () => {  if (esAdmin) {
+        navigation.replace('Admin_menu');
+      } else {
+        navigation.replace('empleados_menu',{
+          campo: userData.campo,
+          cafeteria: userData.cafeteria,
+          nombre: userData.nombre,
+        }); 
+      }}
+      });
+    } else {
+       setusuario('');
+          setcontrasena('');
+      Toast.show({
+        type: ALERT_TYPE.DANGER,
+        title: 'Acceso denegado',
+        textBody: 'Credenciales incorrectas',
+        autoClose: 2000,
+        
+      });
+    }
+  } catch (error) {
+    console.error("Error al consultar usuario:", error);
+    Toast.show({
+      type: ALERT_TYPE.DANGER,
+      title: 'Error',
+      textBody: 'Ocurrió un error al verificar los datos',
+    });
+  }
+     }
   return (
+
+        <AlertNotificationRoot >
     <View style={estilos.container}>
             
            <TouchableOpacity onPress={()=>{navigation.navigate('Usuarios')}} style={estilos.container_switch}>
@@ -26,7 +110,9 @@ export default function Login_admin() {
            
           <Ionicons name="person-outline" size={20} color="#888" style={estilos.icon} />
           <TextInput
-            placeholder="Cafe Roma"
+            placeholder="Usuario"
+            value={usuario}
+            onChangeText={setusuario}
             placeholderTextColor="rgb(184, 184, 184)"
             style={estilos.input}
           />
@@ -37,7 +123,9 @@ export default function Login_admin() {
           <Ionicons name="lock-closed-outline" size={20} color="#888" style={estilos.icon} />
           <TextInput
             secureTextEntry
-            placeholder="••••••••"
+            value={contrasena}
+            onChangeText={setcontrasena}
+            placeholder="Contraseña"
             placeholderTextColor="rgb(184, 184, 184)"
             style={estilos.input}
           />
@@ -45,17 +133,18 @@ export default function Login_admin() {
         </View>
         <View style={estilos.ralla}></View>
 <Text style={estilos.text}>Solamente usuarios autorizados </Text>
-<TouchableOpacity style={estilos.entrar}>
+<TouchableOpacity onPress={entrar_usuarios} style={estilos.entrar}>
     <Text>Entrar</Text>
     <Icon name="arrow-forward-circle-outline" size={30}/>
 </TouchableOpacity>
       </View>
     </View>
+
+        </AlertNotificationRoot >
   );
 }
 const estilos = StyleSheet.create({
     container_switch:{
-        zIndex:999,
         position:'absolute',
         top:'5%',
         display:'flex',
