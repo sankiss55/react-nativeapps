@@ -9,7 +9,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export default function Productos_all() {
+ 
+
   const [product_search, setProduct_search] = useState('');
     const navigation = useNavigation();
   const [fontsLoaded] = useFonts({
@@ -124,9 +127,9 @@ const obtenerProductos = async (categoria, nombre) => {
 
           />
         </View>
-        <TouchableOpacity style={{ backgroundColor: '#8B5E3C', borderRadius: 15, padding: 10 }} >
+        {/* <TouchableOpacity style={{ backgroundColor: '#8B5E3C', borderRadius: 15, padding: 10 }} >
           <Svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#FFFFFF"><Path d="M440-120v-240h80v80h320v80H520v80h-80Zm-320-80v-80h240v80H120Zm160-160v-80H120v-80h160v-80h80v240h-80Zm160-80v-80h400v80H440Zm160-160v-240h80v80h160v80H680v80h-80Zm-480-80v-80h400v80H120Z" /></Svg>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={estilos.categoriesContainer}>
 
@@ -204,7 +207,7 @@ const estilos = StyleSheet.create({
     paddingLeft: 10,
   },
   container_search_trow: {
-    width: '85%',
+    width: '100%',
     borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',

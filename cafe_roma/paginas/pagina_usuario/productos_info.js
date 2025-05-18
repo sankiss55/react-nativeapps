@@ -4,17 +4,32 @@ import { Svg, Path } from 'react-native-svg';
 import HTMLView from 'react-native-htmlview';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { decode } from 'html-entities';
 export default function ProductosInfo({ route }) {
   const [cartTotal, setCartTotal] = useState(0);
     const navigation = useNavigation();
   const { itemId, image, name, price, description } = route.params;
   const [quantity, setQuantity] = useState(1);
-
+const [text_input, settext_input]=useState('');
   const increment = () => setQuantity(quantity + 1);
   const decrement = () => {
     if (quantity > 1) setQuantity(quantity - 1);
   };
+  
   useEffect(() => {
+   try {
+  const sinEtiquetas = description.replace(/<\/?[^>]+(>|$)/g, "");
+const decodificado = decode(sinEtiquetas);
+const limpio = decodificado.trim().replace(/\s+/g, " ");
+
+console.log(limpio);
+    // Solo parsea si realmente esperas un JSON en description
+     const datos = JSON.parse(limpio);
+     settext_input(datos);
+     console.log(datos);
+  } catch (error) {
+    // console.error("❌ Error al procesar la descripción:", error.message);
+  }
   const loadCartTotal = async () => {
     try {
       const cartData = await AsyncStorage.getItem('cart');
@@ -71,7 +86,7 @@ async function handleAddToCart() {
             <Path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z" />
           </Svg>
         </TouchableOpacity>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() =>{  navigation.navigate('Carrito2')}} >
          {cartTotal > 0 && (
  <View style={{ position:'absolute', backgroundColor:'red', borderRadius:20,paddingLeft:8,paddingRight:8, zIndex:99, top:-8, left:15 }} >
             <Text style={{color:'white', fontWeight:600}}>{cartTotal}</Text>
@@ -87,7 +102,29 @@ async function handleAddToCart() {
       <ScrollView contentContainerStyle={styles.scrollContent} >
         <Image source={{ uri: image }} style={styles.productImage} />
         <Text style={styles.productName}>{name}</Text>
-        <HTMLView value={`<div>${description}</div>`} stylesheet={styles.htmlStyles} />
+        <View style={{ marginVertical: 10 }}>
+        
+          {Array.isArray(text_input?.articulos) ? (
+  <View style={{ marginVertical: 10 }}>
+    <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 20 }}>
+      LA PROMO INCLUYE:
+    </Text>
+    {text_input.articulos.map((item, index) => (
+      <View key={index} style={{ marginBottom: 10 }}>
+        <Text style={{ fontWeight: 'bold', fontSize: 16 }}>
+          {item.articulo.nombre} - ${item.articulo.precio}
+        </Text>
+        <Text style={{ color: '#555' }}>{item.descripcion}</Text>
+      </View>
+    ))}
+  </View>
+) : (
+  <HTMLView value={`<div>${description}</div>`} stylesheet={styles.htmlStyles} />
+)}
+
+</View>
+
+       
 
         <View style={styles.quantityContainer}>
           <TouchableOpacity onPress={decrement} style={styles.qtyButton}>
@@ -110,9 +147,9 @@ async function handleAddToCart() {
           <Text style={styles.buttonText}>AGREGAR</Text>
         </Pressable>
 
-        <Pressable style={styles.orderButton}>
+        {/* <Pressable style={styles.orderButton}>
           <Text style={styles.orderButtonText}>ORDENAR AHORA</Text>
-        </Pressable>
+        </Pressable> */}
       </View>
     </View>
   );

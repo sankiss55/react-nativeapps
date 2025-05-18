@@ -6,7 +6,7 @@ import Pedidos_mesas from "../../components/pedidos_mesas";
 import { Svg, Path } from "react-native-svg";
 
 import { initializeApp } from "firebase/app";
-import {  getFirestore, collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, onSnapshot, getDocs, getFirestore, initializeFirestore } from "firebase/firestore";
 import firebaseConfig from "../../config_firebase/config";
 import { useNavigation } from "@react-navigation/native";
 export default function Pag_pedidos({ route }) {
@@ -15,22 +15,45 @@ export default function Pag_pedidos({ route }) {
 const db = getFirestore(app);
   const {campo, cafeteria, nombre } = route.params;
   const [mesas, setMesas] = useState([]);
+useEffect(() => {
+  const mesasRef = collection(db, "mesas");
+  const q = query(mesasRef, where("cafeteria", "==", cafeteria));
 
-  useEffect(() => {
-    async function fetchMesas() {
-      try {
-        const mesasRef = collection(db, "mesas");
-        const q = query(mesasRef, where("cafeteria", "==", cafeteria));
-        const querySnapshot = await getDocs(q);
-        const mesasData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setMesas(mesasData);
-      } catch (error) {
-        console.log("Error obteniendo mesas:", error);
-      }
-    }
+  const unsubscribePedidosList = [];
+  const unsubscribeMesas = onSnapshot(q, (querySnapshot) => {
+    const mesasData = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
 
-    fetchMesas();
-  }, [cafeteria]);
+    const mesasConPedidos = [];
+    mesasData.forEach((mesa) => {
+      
+      const pedidosRef = collection(db, "mesas", mesa.id, "pedidos_mesas");
+      const unsubscribe = onSnapshot(pedidosRef, (pedidosSnap) => {
+        const pedidos = pedidosSnap.docs.map((p) => p.data());
+        // Actualiza la lista de mesas con los pedidos nuevos
+        const index = mesasConPedidos.findIndex((m) => m.id === mesa.id);
+        if (index !== -1) {
+          mesasConPedidos[index] = { ...mesa, pedidos };
+        } else {
+          mesasConPedidos.push({ ...mesa, pedidos });
+        }
+
+        // Refresca la UI
+        setMesas([...mesasConPedidos]);
+      });
+
+      unsubscribePedidosList.push(unsubscribe);
+    });
+  });
+  return () => {
+    unsubscribeMesas();
+    unsubscribePedidosList.forEach((unsub) => unsub());
+  };
+}, []);
+const colores = ["#AEF2BF", "#F9DECD", "#FEE8A1", "#FFFFFF"];
+
 
   return (
     <View style={styles.container}>
@@ -49,15 +72,25 @@ const db = getFirestore(app);
                 </TouchableOpacity>
             </View>
       <Text style={styles.titulo}>Hola, {nombre} </Text>
-      <Text style={styles.subtitulo}>Pedidos</Text>
+      <Text style={styles.subtitulo}>Pedidos {campo}</Text>
 
       <ScrollView>
         <Grid>
-          {mesas.map(mesa => (
+          {
+          mesas.map((mesa, index) => (
+          mesa.pedidos.length > 0 && (
             <Row key={mesa.id} style={styles.row_mesas}>
               <Pedidos_mesas
+              opacity={mesa.pedidos?.some(p => p.atendido === false) ? 1 : 0.5}
+               onPress={() => navigation.navigate('Pedidos_info',{
+nombre_mesa:mesa.nombre_mesa,
+mesa_id:mesa.id,
+pedidos:mesa.pedidos,
+               })}
                 title={mesa.nombre_mesa || "Mesa"}
-                text={`Estado:  "Desconocido"`}
+                 text={`Estado: ${mesa.pedidos?.some(p => p.atendido === false) 
+    ? 'Con pedidos' 
+    : "Atendido"}`}
                 icon={
                   <Svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -68,11 +101,11 @@ const db = getFirestore(app);
                   >
                     <Path d="M440-80v-520H80l400-280 400 280H520v520h-80Zm40-600h146-292 146ZM120-80v-210L88-466l78-14 30 160h164v240h-80v-160h-80v160h-80Zm480 0v-240h164l30-160 78 14-32 176v210h-80v-160h-80v160h-80ZM334-680h292L480-782 334-680Z" />
                   </Svg>
-                }
-                color="#D6D0FC"
+          }
+          color={colores[index % colores.length]}
               />
             </Row>
-          ))}
+          )))}
         </Grid>
       </ScrollView>
     </View>

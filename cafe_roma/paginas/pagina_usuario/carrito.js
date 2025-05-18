@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, ScrollView } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, ScrollView, TextInput } from "react-native";
 import { Svg, Path } from 'react-native-svg';
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
+import { getFirestore, collection, query, where, getDocs, addDoc } from "firebase/firestore";
+import { initializeApp } from "firebase/app";
+import firebaseConfig from "../../config_firebase/config";
+import { AlertNotificationRoot,ALERT_TYPE, Toast,Dialog } from 'react-native-alert-notification';
+
 export default function Carrito() {
   const navigation = useNavigation();
+  const [text_input, settext_input]=useState('');
   const [cart, setCart] = useState({});
   const [totalPrice, setTotalPrice] = useState(0);
 useFocusEffect(
@@ -32,51 +38,191 @@ useFocusEffect(
   }, [])
 );
 
-  const handleOrderNow = () => {
-    AsyncStorage.removeItem('cart');
+ const handleOrderNow = async () => {
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const cartData = await AsyncStorage.getItem('cart');
+    const parsedCart = cartData ? JSON.parse(cartData) : {};
+console.log('Parsed Cart:', parsedCart);
+    if (Object.keys(parsedCart).length === 0) {
+//       Dialog.show({
+//   type: ALERT_TYPE.SUCCESS,
+//   title: 'Éxito',
+//   textBody: '¡Felicidades! Este es un cuadro de diálogo de éxito.',
+//   button: 'Cerrar',
+// });
+      return;
+    }
+
+    const nombreMesa = await AsyncStorage.getItem('nombre_mesa');; 
+const nombreCafeteria = await AsyncStorage.getItem('nombre_cafeteria');
+    // 1. Buscar mesa por nombre
+    const mesasRef = collection(db, "mesas");
+    const q = query(mesasRef, where("nombre_mesa", "==", nombreMesa),
+  where("cafeteria", "==", nombreCafeteria));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      alert("No se encontró la mesa.");
+      return;
+    }
+
+    const mesaDoc = querySnapshot.docs[0];
+    const mesaId = mesaDoc.id;
+
+    // 2. Insertar pedidos en subcolección pedidos_mesas
+    const pedidosRef = collection(db, "mesas", mesaId, "pedidos_mesas");
+
+    const addPromises = Object.values(parsedCart).map((item) =>
+      addDoc(pedidosRef, {
+        id:item.id,
+        pedido: item.name,
+        cantidad: item.quantity,
+        precio_unitario: item.price,
+        atendido: false,
+      })
+    );
+
+    await Promise.all(addPromises);
+  const notasRef = collection(db,"mesas",mesaId, "notas_productos");
+  if(text_input!=''){
+    
+  
+    try {
+    await addDoc(notasRef, {
+      atendido:false,
+      observaciones: text_input,
+    });
+
+  } catch (error) {
+    console.error("Error al guardar la nota:", error);
+    alert("Ocurrió un error al guardar el pedido.");
+  }
+}
+settext_input('');
+    // 3. Limpiar carrito
+    await AsyncStorage.removeItem('cart');
     setCart({});
     setTotalPrice(0);
-  };
+Dialog.show({
+  type: ALERT_TYPE.SUCCESS,
+  title: 'Éxito',
+  textBody: '¡Pedido realizado con éxito!',
+  button: 'Cerrar',
+  onPressButton: () => {
+     Dialog.hide(); 
+     const availableRoutes = navigation.getState().routeNames;
+      if (availableRoutes.includes('Tiket')) {
+    navigation.navigate('Tiket');
+  } else {
+    navigation.goBack(); 
+  }
+  }
+});
+
+   // navigation.navigate("Productos_all");
+
+  } catch (error) {
+    console.error("Error al enviar el pedido:", error);
+    alert("Hubo un error al procesar tu pedido.");
+  }
+};
+
 
   return (
-    <View style={styles.container}>
-      <View style={styles.container_top}>
-        <TouchableOpacity onPress={() => navigation.navigate('Productos_all')}>
-          <Svg xmlns="http://www.w3.org/2000/svg" height="34px" viewBox="0 -960 960 960" width="34px" fill="#000000">
-            <Path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z" />
-          </Svg>
-        </TouchableOpacity>
-      </View>
+    <AlertNotificationRoot
+     theme="light" // Optional: 'light', 'dark', or omit for auto
+      colors={[
+        {
+          label: '#000000',
+          card: '#ffffff',
+          overlay: '#00000080',
+          success: '#8B5E3C',     
+          danger: '#ff0000',
+          warning: '#ffa500',
+        },
+        {
+          label: '#ffffff',
+          card: '#1e1e1e',
+          overlay: '#00000080',
+          success: '#8B5E3C',     
+          danger: '#ff4444',
+          warning: '#ffbb33',
+        },
+      ]}
+    >
+   <View style={styles.container}>
+  <View style={styles.container_top}>
+    <TouchableOpacity onPress={() => {
+      const availableRoutes = navigation.getState().routeNames;
+      if (availableRoutes.includes('Productos_all')) {
+        navigation.navigate('Productos_all');
+      } else {
+        navigation.goBack();
+      }
+    }}>
+      <Svg xmlns="http://www.w3.org/2000/svg" height="34px" viewBox="0 -960 960 960" width="34px" fill="#000000">
+        <Path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z" />
+      </Svg>
+    </TouchableOpacity>
+  </View>
 
-        <Text style={styles.title}>MI ORDEN</Text>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {Object.values(cart).length === 0 ? (
-          <Text style={styles.emptyText}>Tu carrito está vacío.</Text>
-        ) : (
-          Object.values(cart).map((item, index) => (
-  <View key={index} style={styles.itemContainer}>
-              <Text style={styles.itemName}>{item.name} X{item.quantity}</Text>
-              <Text style={styles.itemName}> ${item.price.toFixed(2)}MX</Text>
-              
-            </View>
-          ))
-        )}
-      </ScrollView>
+  <Text style={styles.title}>MI ORDEN</Text>
 
-      {Object.values(cart).length > 0 && (
-        <View style={styles.footer}>
-            <Text style={styles.totaltxt}>Precio total:  <Text style={styles.totalText}> ${totalPrice.toFixed(2)}</Text></Text>
-         
-          <TouchableOpacity style={styles.orderButton} onPress={handleOrderNow}>
-            <Text style={styles.orderButtonText}>Pedir Ahora</Text>
-          </TouchableOpacity>
+  <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <TextInput
+    value={text_input}
+    onChangeText={settext_input}
+      editable
+      multiline
+      placeholder="¿Quieres quitar o cambiar algo? Ej: sin crema..."
+      numberOfLines={4}
+      style={styles.textinput}
+    />
+
+    {Object.values(cart).length === 0 ? (
+      <Text style={styles.emptyText}>Tu carrito está vacío.</Text>
+    ) : (
+      Object.values(cart).map((item, index) => (
+        <View key={index} style={styles.itemContainer}>
+          <Text style={styles.itemName}>{item.name} X{item.quantity}</Text>
+          <Text style={styles.itemName}> ${item.price * item.quantity}MX</Text>
         </View>
-      )}
+      ))
+    )}
+
+    {/* Agregamos un margen extra al final para evitar que el último ítem quede detrás del footer */}
+    <View style={{ height: 120 }} />
+  </ScrollView>
+
+  {Object.values(cart).length > 0 && (
+    <View style={styles.footer}>
+      <Text style={styles.totaltxt}>Precio total:  <Text style={styles.totalText}> ${totalPrice.toFixed(2)}</Text></Text>
+      <TouchableOpacity style={styles.orderButton} onPress={handleOrderNow}>
+        <Text style={styles.orderButtonText}>Pedir Ahora</Text>
+      </TouchableOpacity>
     </View>
+  )}
+</View>
+
+    </AlertNotificationRoot>
   );
 }
 
 const styles = StyleSheet.create({
+  textinput:{
+    width: '100%',
+  minHeight: 100,
+  backgroundColor: '#fff',
+  borderColor: '#ccc',
+  borderWidth: 1,
+  borderRadius: 10,
+  padding: 10,
+  fontSize: 16,
+  color: '#333',
+  },
   container_top: {
     position: 'absolute',
     top: 0,
@@ -97,7 +243,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
   },
   title: {
-    marginTop: 70,
+    marginTop: 20,
     fontSize: 40,
     fontWeight: 'bold',
     marginLeft: 10,
@@ -133,14 +279,15 @@ const styles = StyleSheet.create({
   },
   footer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: '0%',
     width: '100%',
     backgroundColor: '#fff',
+    height: '17%',
     paddingVertical: 12,
     paddingHorizontal: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     borderTopColor: '#ddd',
     borderTopWidth: 1,
   },

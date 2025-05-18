@@ -59,7 +59,9 @@ const db = getFirestore(app);
         textBody: 'Bienvenido administrador',
         autoClose: 1000,
          onHide: () => {  if (esAdmin) {
-        navigation.replace('Admin_menu');
+        navigation.replace('Admin_menu',{
+          usuario: userData.nombre,
+        });
       } else {
         navigation.replace('empleados_menu',{
           campo: userData.campo,

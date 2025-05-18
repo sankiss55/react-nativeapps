@@ -24,6 +24,7 @@ if(password!='cafeteria'){
 navigation.replace('Admin');
     }
     return(
+      <AlertNotificationRoot>
         <View style={estilos.container}>
                     
                  
@@ -55,6 +56,7 @@ navigation.replace('Admin');
         </TouchableOpacity>
               </View>
             </View>
+            </AlertNotificationRoot>
     )
 }
 
