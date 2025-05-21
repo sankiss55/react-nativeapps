@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Text, View, StyleSheet, Button, Alert, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Image } from 'react-native';
-export default function App() {
+import { useNavigation } from '@react-navigation/native';
+
+export default function Index() {
+    const navigation = useNavigation();
+
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
 
@@ -15,6 +19,8 @@ export default function App() {
   const handleBarCodeScanned = ({ data }) => {
     setScanned(true);
     Alert.alert('Código QR escaneado', `Datos: ${data}`);
+navigation.navigate('Productos_all'); 
+
     // Aquí podrías redirigir al menú o procesar el pedido
   };
 
@@ -33,7 +39,7 @@ export default function App() {
     <View style={styles.container}>
       <Text style={styles.title}>Bienvenido a Café Roma</Text>
       <Image
-        source={require('./img/logo.png')} 
+        source={require('../../img/logo.png')} 
     style={{ width: 150, height: 150, marginBottom: 20 }}
       />
       <Text style={styles.subtitle}>Para iniciar tu pedido, debes escanear el QR</Text>

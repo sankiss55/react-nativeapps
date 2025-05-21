@@ -9,6 +9,9 @@ import Pedidos_info from "../paginas_empleados/pedidos_info";
 import Stack_empleados from "../paginas_empleados/stack_empleados";
 import Pag_pedidos from "../paginas_empleados/pag_pedidos";
 import Admin from "../paginas_admin/admin";
+import Promociones from "../paginas_admin/promociones";
+import GestionAdmin from "../paginas_admin/gestion_admin";
+import Usuarios_categoria from "../paginas_admin/usuarios_categoria";
 const Stack= createStackNavigator();
 export default function App() {
   return (
@@ -20,6 +23,10 @@ export default function App() {
         <Stack.Screen name="Admin_menu" component={Admin} options={{ headerShown:false,}} />
           <Stack.Screen name="empleados_menu" component={Pag_pedidos} options={{ headerShown:false,}} />
            <Stack.Screen name="Pedidos_info" component={Pedidos_info} options={{ headerShown:false,}} />
+           
+             <Stack.Screen name="promos" component={Promociones} options={{ headerShown:false,}} />
+        <Stack.Screen name="GestionAdmin" component={GestionAdmin} options={{ headerShown:false,}} />
+         <Stack.Screen name="Usuarios_categoria" component={Usuarios_categoria} options={{ headerShown:false,}} />
       </Stack.Navigator>
     </NavigationContainer>
 

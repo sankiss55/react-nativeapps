@@ -1,9 +1,10 @@
 import { Col } from "react-native-easy-grid";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Svg, Path } from 'react-native-svg';
-export default function Options_admin({ icon, title, text, color }) {
+export default function Options_admin({ icon, title, text, color, onPress
+ }) {
     return(
-    <TouchableOpacity style={[style_options.container_options, { backgroundColor: color }]}>
+    <TouchableOpacity onPress={onPress} style={[style_options.container_options, { backgroundColor: color }]}>
             <View style={style_options.icon}>
             {icon}
            </View>

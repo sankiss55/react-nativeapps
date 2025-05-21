@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "cafe_roma",
-    "slug": "cafe_roma",
+    "name": "cafe-qr",
+    "slug": "cafe-qr",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,20 +20,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "com.santiago_vs.cafe_roma"
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-font",
-      "expo-barcode-scanner"
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "6eabafe5-5213-4bcb-80bc-19b39bb357bf"
-      }
     }
   }
 }
