@@ -10,8 +10,8 @@ import { useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function Productos_all() {
- 
+export default function Productos_all({route}) {
+ const {mesa, cafeteria}= route.params;
 
   const [product_search, setProduct_search] = useState('');
     const navigation = useNavigation();
@@ -59,7 +59,6 @@ const obtenerProductos = async (categoria, nombre) => {
             setProductos_all(filteredItems);
             return;
         }
-        console.log('Productos:', response.data.items);
         setProductos_all(response.data.items);
       } catch (err) {
         
@@ -102,6 +101,8 @@ const obtenerProductos = async (categoria, nombre) => {
     <View style={estilos.container}>
       <View style={estilos.container_top}>
         <Text style={estilos.titulo}>Café Roma</Text>
+        
+      
         <TouchableOpacity onPress={() => navigation.navigate('Carrito')}>
             {cartTotal> 0 && (
            <View style={{ position:'absolute', backgroundColor:'#8B5E3C', borderRadius:20,paddingLeft:8,paddingRight:8, zIndex:99, top:-8, left:15 }} >
@@ -174,7 +175,7 @@ const obtenerProductos = async (categoria, nombre) => {
     contentContainerStyle={{ paddingBottom: 100 }}
     renderItem={({ item }) => (
       <TouchableOpacity onPress={()=>{
-        navigation.navigate('Stack_productos', { itemId: item.id, image: item.image_url, name: item.item_name, price: item.variants[0]?.default_price, description:item.description, });
+        navigation.navigate('ProductosInfo', { itemId: item.id, image: item.image_url, name: item.item_name, price: item.variants[0]?.default_price, description:item.description, categoria: item.category_id });
       }} style={{ flex: 1, margin: 10, backgroundColor: 'white', padding: 10, borderRadius: 8,  shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -191,7 +192,7 @@ justifyContent: 'center',
 
         <Text style={{ fontSize: 18, fontWeight: 'bold' }}>{item.item_name}</Text>
         
-        <Text>${item.variants[0]?.default_price} {item.currency}MX</Text>
+        <Text>${item.variants[0]?.default_price ||'Variable'} {item.currency}MX</Text>
       </TouchableOpacity>
     )}
   />

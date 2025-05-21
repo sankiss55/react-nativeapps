@@ -1,27 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, Button, Alert, TouchableOpacity } from 'react-native';
+import { Text, View, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Index() {
-    const navigation = useNavigation();
-
+  const navigation = useNavigation();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
 
   useEffect(() => {
+    const checkSession = async () => {
+      const qrSession = await AsyncStorage.getItem('qr_session');
+      if (qrSession) {
+        navigation.replace('Tabs', {
+          screen: 'ProductosStack',
+          params: {
+            screen: 'Productos_all',
+          },
+        });
+      }
+    };
+
+    checkSession();
+
     if (!permission) {
       requestPermission();
     }
   }, []);
 
-  const handleBarCodeScanned = ({ data }) => {
+  const handleBarCodeScanned = async ({ data }) => {
     setScanned(true);
-    Alert.alert('Código QR escaneado', `Datos: ${data}`);
-navigation.navigate('Productos_all'); 
+    if (!data.includes('cafeteria') || !data.includes('mesa')) {
+      alert('Código QR no válido');
+      return;
+    }
+    const mesa = data.split('|')[0].split(':')[1];
+    const cafeteria = data.split('|')[1].split(':')[1];
 
-    // Aquí podrías redirigir al menú o procesar el pedido
+    Alert.alert('Código QR escaneado', `Datos: ${data}`);
+    await AsyncStorage.setItem('nombre_mesa', mesa);
+    await AsyncStorage.setItem('nombre_cafeteria', cafeteria);
+    await AsyncStorage.setItem('qr_session', 'active'); // Guardar la sesión activa
+
+    navigation.replace('Tabs', {
+      screen: 'ProductosStack',
+      params: {
+        screen: 'Productos_all',
+      },
+    });
   };
 
   if (!permission?.granted) {
@@ -39,8 +67,8 @@ navigation.navigate('Productos_all');
     <View style={styles.container}>
       <Text style={styles.title}>Bienvenido a Café Roma</Text>
       <Image
-        source={require('../../img/logo.png')} 
-    style={{ width: 150, height: 150, marginBottom: 20 }}
+        source={require('../../img/logo.png')}
+        style={{ width: 150, height: 150, marginBottom: 20 }}
       />
       <Text style={styles.subtitle}>Para iniciar tu pedido, debes escanear el QR</Text>
 
