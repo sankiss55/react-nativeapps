@@ -14,12 +14,16 @@ export default function Index() {
     const checkSession = async () => {
       const qrSession = await AsyncStorage.getItem('qr_session');
       if (qrSession) {
-        navigation.replace('Tabs', {
-          screen: 'ProductosStack',
-          params: {
-            screen: 'Productos_all',
-          },
-        });
+       navigation.replace('Tabs', {
+    screen: 'ProductosStack',
+    params: {
+      screen: 'Productos_all',
+      params: {
+        mesa: mesa,
+        cafeteria: cafeteria,
+      },
+    },
+  });
       }
     };
 
@@ -30,27 +34,33 @@ export default function Index() {
     }
   }, []);
 
-  const handleBarCodeScanned = async ({ data }) => {
-    setScanned(true);
-    if (!data.includes('cafeteria') || !data.includes('mesa')) {
-      alert('Código QR no válido');
-      return;
-    }
-    const mesa = data.split('|')[0].split(':')[1];
-    const cafeteria = data.split('|')[1].split(':')[1];
+ const handleBarCodeScanned = async ({ data }) => {
+  setScanned(true);
 
-    Alert.alert('Código QR escaneado', `Datos: ${data}`);
-    await AsyncStorage.setItem('nombre_mesa', mesa);
-    await AsyncStorage.setItem('nombre_cafeteria', cafeteria);
-    await AsyncStorage.setItem('qr_session', 'active'); // Guardar la sesión activa
+  if (!data.includes('cafeteria') || !data.includes('mesa')) {
+    alert('Código QR no válido');
+    return;
+  }
 
-    navigation.replace('Tabs', {
-      screen: 'ProductosStack',
+  const mesa = data.split('|')[0].split(':')[1];
+  const cafeteria = data.split('|')[1].split(':')[1];
+
+  await AsyncStorage.setItem('nombre_mesa', mesa);
+  await AsyncStorage.setItem('nombre_cafeteria', cafeteria);
+  await AsyncStorage.setItem('qr_session', 'active');
+
+  navigation.replace('Tabs', {
+    screen: 'ProductosStack',
+    params: {
+      screen: 'Productos_all',
       params: {
-        screen: 'Productos_all',
+        mesa: mesa,
+        cafeteria: cafeteria,
       },
-    });
-  };
+    },
+  });
+};
+
 
   if (!permission?.granted) {
     return (

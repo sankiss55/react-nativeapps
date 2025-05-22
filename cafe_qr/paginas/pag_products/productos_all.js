@@ -10,8 +10,7 @@ import { useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function Productos_all({route}) {
- const {mesa, cafeteria}= route.params;
+export default function Productos_all() {
 
   const [product_search, setProduct_search] = useState('');
     const navigation = useNavigation();

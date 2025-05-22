@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "cafe-qr",
-    "slug": "cafe-qr",
+    "name": "cafe-roma",
+    "slug": "cafe-roma",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./img/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./img/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,19 +17,20 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./img/icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.santiago_vs.cafeqr"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./img/icon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "4926d921-089d-4931-81b9-66237f4e98a1"
+        "projectId": "3549a2ee-53e4-452e-b4ec-4a5f67a0ebd5"
       }
-    }
+    },
+    "owner": "sanprogramer1"
   }
 }
