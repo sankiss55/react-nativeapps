@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { StyleSheet, TextInput, View, Text, TouchableOpacity, Image } from "react-native";
+import { StyleSheet, TextInput, View, Text, TouchableOpacity, Image, Dimensions } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Svg, Path } from 'react-native-svg';
 import { useNavigation } from "@react-navigation/native";
 import { ALERT_TYPE, AlertNotificationRoot, Toast } from "react-native-alert-notification";
 import firebaseConfig from "../../config_firebase/config";
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp } from "firebase/app";
 import {
   getFirestore,
@@ -53,20 +53,31 @@ const db = getFirestore(app);
 
   const esAdmin = userData.campo === 'admin'; 
 
+  await AsyncStorage.setItem('cafeteria',  userData.cafeteria);
       Toast.show({
         type: ALERT_TYPE.SUCCESS,
         title: 'Acceso permitido',
-        textBody: 'Bienvenido administrador',
+        textBody: 'Bienvenido',
         autoClose: 1000,
          onHide: () => {  if (esAdmin) {
         navigation.replace('Admin_menu',{
           usuario: userData.nombre,
         });
-      } else {
+      } else if(userData.campo=== 'cajero') {
+        navigation.replace('PedidosCajeros',{
+          campo: userData.campo,
+          cafeteria: userData.cafeteria,
+          nombre: userData.nombre,
+          usuario: userData.usuario,
+          password: userData.password,
+        });
+      }else{
         navigation.replace('empleados_menu',{
           campo: userData.campo,
           cafeteria: userData.cafeteria,
           nombre: userData.nombre,
+          usuario: userData.usuario,
+          password: userData.password,
         }); 
       }}
       });
@@ -90,75 +101,57 @@ const db = getFirestore(app);
     });
   }
      }
+  const { width, height } = Dimensions.get("window");
+  const isTablet = width >= 768;
+
   return (
-
-        <AlertNotificationRoot >
-    <View style={estilos.container}>
-            
-           <TouchableOpacity onPress={()=>{navigation.navigate('Usuarios')}} style={estilos.container_switch}>
-             <Text style={{fontWeight:600,fontSize:18}}>Mesas</Text>
-           <Svg style={{backgroundColor:'rgb(255, 255, 255)', borderRadius:30,}} height="40" width="40" viewBox="0 -960 960 960" fill="#000000">
-  <Path d="M360-390q-21 0-35.5-14.5T310-440q0-21 14.5-35.5T360-490q21 0 35.5 14.5T410-440q0 21-14.5 35.5T360-390Zm240 0q-21 0-35.5-14.5T550-440q0-21 14.5-35.5T600-490q21 0 35.5 14.5T650-440q0 21-14.5 35.5T600-390ZM480-160q134 0 227-93t93-227q0-24-3-46.5T786-570q-21 5-42 7.5t-44 2.5q-91 0-172-39T390-708q-32 78-91.5 135.5T160-486v6q0 134 93 227t227 93Zm0 80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-54-715q42 70 114 112.5T700-640q14 0 27-1.5t27-3.5q-42-70-114-112.5T480-800q-14 0-27 1.5t-27 3.5ZM177-581q51-29 89-75t57-103q-51 29-89 75t-57 103Zm249-214Zm-103 36Z" />
-</Svg>
-
-           </TouchableOpacity>
-      <View style={estilos.formContainer}>
-  <Image
-        source={require('../../img/logo.png')}
-        style={estilos.imagen_logo}
-      />
-        {/* Usuario */}
-        <View style={estilos.inputWrapper}>
-           
-          <Ionicons name="person-outline" size={20} color="#888" style={estilos.icon} />
-          <TextInput
-            placeholder="Usuario"
-            value={usuario}
-            onChangeText={setusuario}
-            placeholderTextColor="rgb(184, 184, 184)"
-            style={estilos.input}
+    <AlertNotificationRoot>
+      <View style={estilos.container}>
+        <View style={[estilos.formContainer, { width:'100%', height: isTablet ? '80%' : '90%' }]}>
+          <Image
+            source={require('../../img/logo.png')}
+            style={[
+              estilos.imagen_logo,
+              { width: isTablet ? width * 0.3 : width * 0.5, height: isTablet ? width * 0.3 : width * 0.5 }
+            ]}
           />
-        </View>
+          {/* Usuario */}
+          <View style={estilos.inputWrapper}>
+            <Ionicons name="person-outline" size={20} color="#888" style={estilos.icon} />
+            <TextInput
+              placeholder="Usuario"
+              value={usuario}
+              onChangeText={setusuario}
+              placeholderTextColor="rgb(184, 184, 184)"
+              style={estilos.input}
+            />
+          </View>
 
-        {/* Contraseña */}
-        <View style={estilos.inputWrapper}>
-          <Ionicons name="lock-closed-outline" size={20} color="#888" style={estilos.icon} />
-          <TextInput
-            secureTextEntry
-            value={contrasena}
-            onChangeText={setcontrasena}
-            placeholder="Contraseña"
-            placeholderTextColor="rgb(184, 184, 184)"
-            style={estilos.input}
-          />
-          
+          {/* Contraseña */}
+          <View style={estilos.inputWrapper}>
+            <Ionicons name="lock-closed-outline" size={20} color="#888" style={estilos.icon} />
+            <TextInput
+              secureTextEntry
+              value={contrasena}
+              onChangeText={setcontrasena}
+              placeholder="Contraseña"
+              placeholderTextColor="rgb(184, 184, 184)"
+              style={estilos.input}
+            />
+          </View>
+          <View style={estilos.ralla}></View>
+          <Text style={estilos.text}>Solamente usuarios autorizados</Text>
+          <TouchableOpacity onPress={entrar_usuarios} style={[estilos.entrar, { width: isTablet ? '40%' : '60%' }]}>
+            <Text>Entrar</Text>
+            <Icon name="arrow-forward-circle-outline" size={30} />
+          </TouchableOpacity>
         </View>
-        <View style={estilos.ralla}></View>
-<Text style={estilos.text}>Solamente usuarios autorizados </Text>
-<TouchableOpacity onPress={entrar_usuarios} style={estilos.entrar}>
-    <Text>Entrar</Text>
-    <Icon name="arrow-forward-circle-outline" size={30}/>
-</TouchableOpacity>
       </View>
-    </View>
-
-        </AlertNotificationRoot >
+    </AlertNotificationRoot>
   );
 }
+
 const estilos = StyleSheet.create({
-    container_switch:{
-        position:'absolute',
-        top:'5%',
-        display:'flex',
-        flexDirection:'row',
-        justifyContent:'flex-end',
-        alignContent:'flex-end',
-        alignItems:'center',
-height:60,
-gap: 20,
-marginLeft:'60%',
-width:'30%'
-    },
     text:{
 color:'#808080', fontWeight:600,
 width:'100%',
@@ -181,13 +174,18 @@ width:'100%',
     padding: 30,
     alignItems: 'center',
   },
+  formContainerTablet: {
+    width: '70%',
+    height: '80%',
+    padding: 50,
+  },
   imagen_logo: {
-    position:'absolute',
-    top:'5%',
-    width: 180,
-    height: 180,
     resizeMode: 'contain',
     marginBottom: 30,
+  },
+  imagen_logoTablet: {
+    width: 250,
+    height: 250,
   },
   inputWrapper: {
     flexDirection: 'row',

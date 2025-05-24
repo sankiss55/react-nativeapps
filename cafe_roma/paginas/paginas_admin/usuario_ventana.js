@@ -16,7 +16,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { SelectList } from "react-native-dropdown-select-list";
 
-export default function GestionAdmin() {
+export default function GestionVentanilla() {
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
   const [usuarios, setUsuarios] = useState([]);
@@ -31,12 +31,12 @@ export default function GestionAdmin() {
 
   const fetchUsuarios = async () => {
     try {
-      const q = query(collection(db, "usuarios"), where("campo", "==", "admin"));
+      const q = query(collection(db, "usuarios"), where("campo", "==", "cajero"));
       const querySnapshot = await getDocs(q);
       const usuariosData = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setUsuarios(usuariosData);
     } catch (error) {
-      console.error("Error al obtener usuarios:", error);
+      console.error("Error al obtener cajeros:", error);
     }
   };
 
@@ -65,27 +65,27 @@ export default function GestionAdmin() {
 
     try {
       if (editingId) {
-        // Actualizar usuario existente
+        // Actualizar cajero existente
         const userDoc = doc(db, "usuarios", editingId);
         await updateDoc(userDoc, { nombre, usuario, password, cafeteria });
         Toast.show({
           type: "success",
           title: "Éxito",
-          textBody: "Usuario actualizado correctamente."
+          textBody: "Cajero actualizado correctamente."
         });
       } else {
-        // Crear nuevo usuario
+        // Crear nuevo cajero
         await addDoc(collection(db, "usuarios"), {
           nombre,
           usuario,
           password,
           cafeteria,
-          campo: "admin",
+          campo: "cajero", // Cambiado a "cajero"
         });
         Toast.show({
           type: "success",
           title: "Éxito",
-          textBody: "Usuario creado correctamente."
+          textBody: "Cajero creado correctamente."
         });
       }
       fetchUsuarios();
@@ -96,11 +96,11 @@ export default function GestionAdmin() {
       setEditingId(null);
       setModalVisible(false);
     } catch (error) {
-      console.error("Error al guardar usuario:", error);
+      console.error("Error al guardar cajero:", error);
       Toast.show({
         type: "danger",
         title: "Error",
-        textBody: "No se pudo guardar el usuario."
+        textBody: "No se pudo guardar el cajero."
       });
     }
   };
@@ -154,7 +154,7 @@ export default function GestionAdmin() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Gestión de Administradores</Text>
+      <Text style={styles.title}>Gestión de Cajeros</Text>
       <TextInput
         style={styles.searchInput}
         placeholder="Buscar por nombre"
@@ -187,7 +187,7 @@ export default function GestionAdmin() {
         style={styles.addButton}
         onPress={() => setModalVisible(true)}
       >
-        <Text style={styles.addButtonText}>Agregar Administrador</Text>
+        <Text style={styles.addButtonText}>Agregar Cajero</Text>
       </TouchableOpacity>
       <Modal
         visible={modalVisible}
@@ -197,7 +197,7 @@ export default function GestionAdmin() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.title}>{editingId ? "Editar Usuario" : "Agregar Usuario"}</Text>
+            <Text style={styles.title}>{editingId ? "Editar Cajero" : "Agregar Cajero"}</Text>
             <TextInput
               style={styles.input}
               placeholder="Nombre"
@@ -230,7 +230,7 @@ export default function GestionAdmin() {
               onPress={handleAddOrUpdate}
             >
               <Text style={styles.modalButtonText}>
-                {editingId ? "Actualizar Usuario" : "Agregar Usuario"}
+                {editingId ? "Actualizar Cajero" : "Agregar Cajero"}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity

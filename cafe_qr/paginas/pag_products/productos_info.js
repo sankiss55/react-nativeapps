@@ -13,6 +13,7 @@ export default function ProductosInfo({ route }) {
   const [text_input, settext_input] = useState('');
 
   useEffect(() => {
+    console.error(description);
     // Ocultar la barra de navegación de las tabs
     navigation.setOptions({ tabBarStyle: { display: 'none' } });
 
@@ -33,6 +34,7 @@ export default function ProductosInfo({ route }) {
       const decodificado = decode(sinEtiquetas);
       const limpio = decodificado.trim().replace(/\s+/g, " ");
 
+      console.info(limpio);
       // Solo parsea si realmente esperas un JSON en description
       const datos = JSON.parse(limpio);
       settext_input(datos);
@@ -67,7 +69,7 @@ export default function ProductosInfo({ route }) {
       if (cart[itemId]) {
         cart[itemId].quantity += quantity;
       } else {
-        cart[itemId] = { id: itemId, name, price, quantity, categoria:categoria };
+        cart[itemId] = { id: itemId, name, price, quantity, categoria:categoria, description: text_input};
       }
 
       // Guardar el carrito actualizado

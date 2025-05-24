@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, Button, Modal, TextInput, TouchableOpacity, Platform, UIManager } from "react-native";
+import { View, Text, FlatList, StyleSheet, Button, Modal, TextInput, TouchableOpacity, Platform, UIManager, ScrollView } from "react-native";
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, query, where, onSnapshot, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { AlertNotificationRoot, ALERT_TYPE, Toast, Dialog } from "react-native-alert-notification";
@@ -156,15 +156,17 @@ export default function Usuarios_categoria() {
   return (
     <AlertNotificationRoot>
       <View style={styles.container}>
-        <Text style={styles.title}>Usuarios</Text>
+        <Text style={styles.title}>Gestión de Usuarios</Text>
+
         <TextInput
-          style={styles.searchInput}
+          style={styles.searchBar}
           placeholder="Buscar usuarios..."
           value={searchText}
           onChangeText={setSearchText}
         />
+
         <FlatList
-          data={filteredUsuarios} // Usar la lista filtrada
+          data={filteredUsuarios}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.row}>
@@ -179,11 +181,16 @@ export default function Usuarios_categoria() {
             </View>
           )}
         />
-        <Button title="Crear Usuario" onPress={() => setModalVisible(true)} />
+
+        <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+          <Text style={styles.addButtonText}>Crear Usuario</Text>
+        </TouchableOpacity>
+
         <Modal visible={modalVisible} animationType="slide" transparent={true}>
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Crear Usuario</Text>
+
               <TextInput
                 style={styles.input}
                 placeholder="Nombre"
@@ -207,7 +214,7 @@ export default function Usuarios_categoria() {
                 setSelected={setSelectedCafeteria}
                 data={cafeterias}
                 placeholder="Seleccionar Cafetería"
-                boxStyles={styles.selectListBox}
+                boxStyles={styles.selectList}
               />
               <TextInput
                 style={styles.input}
@@ -216,18 +223,31 @@ export default function Usuarios_categoria() {
                 onChangeText={setCampo}
               />
               <Text style={styles.modalTitle}>Seleccionar Categorías</Text>
-              {categorias.map((categoria) => (
-                <View key={categoria.key} style={styles.checkboxContainer}>
-                  <Checkbox
-                    status={selectedCategorias.includes(categoria.key) ? "checked" : "unchecked"}
-                    onPress={() => toggleCategoria(categoria.key)}
-                  />
-                  <Text style={styles.checkboxText}>{categoria.value}</Text>
-                </View>
-              ))}
+             <ScrollView   style={{
+    maxHeight: 160,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    paddingRight: 5,
+  }}
+  showsVerticalScrollIndicator={true} > 
+  {categorias.map((categoria) => (
+    <View key={categoria.key} style={styles.checkboxContainer}>
+      <Checkbox
+        status={selectedCategorias.includes(categoria.key) ? 'checked' : 'unchecked'}
+        onPress={() => toggleCategoria(categoria.key)}
+      />
+      <Text style={styles.checkboxText}>{String(categoria.value)}</Text>
+
+    </View>
+  ))}
+</ScrollView>
+
               <TouchableOpacity style={styles.saveButton} onPress={handleCrearUsuario}>
                 <Text style={styles.saveButtonText}>Guardar</Text>
               </TouchableOpacity>
+
               <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
                 <Text style={styles.cancelButtonText}>Cancelar</Text>
               </TouchableOpacity>
@@ -242,30 +262,56 @@ export default function Usuarios_categoria() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: "#F5F5F5",
+    padding: 20,
+    backgroundColor: "#fff",
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 20,
     textAlign: "center",
-    color: "#333",
+    marginBottom: 20,
+  },
+  searchBar: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 15,
+    padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#EEE",
-    backgroundColor: "#FFF",
-    borderRadius: 10,
+    borderBottomColor: "#ccc",
+    backgroundColor: "#f9f9f9",
+    borderRadius: 5,
     marginBottom: 10,
   },
   text: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#333",
+  },
+  deleteButton: {
+    backgroundColor: "#FF0000",
+    padding: 5,
+    borderRadius: 5,
+  },
+  deleteButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  addButton: {
+    backgroundColor: "#007BFF",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  addButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
   modalContainer: {
     flex: 1,
@@ -274,55 +320,52 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    width: "90%",
-    backgroundColor: "#FFF",
+    width: "80%",
+    backgroundColor: "#fff",
     padding: 20,
     borderRadius: 10,
+    alignItems: "center",
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "bold",
     marginBottom: 20,
-    textAlign: "center",
+  },
+  selectList: {
+    borderRadius: 5,
+    borderColor: "#ccc",
+    marginVertical: 10,
+    width: "100%",
   },
   input: {
-    height: 50,
-    borderColor: "#CCC",
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginBottom: 20,
-    backgroundColor: "#FFF",
-    fontSize: 16,
-  },
-  selectListBox: {
-    borderColor: "#CCC",
-    borderWidth: 1,
-    borderRadius: 10,
-    marginBottom: 20,
-    backgroundColor: "#FFF",
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    marginVertical: 10,
+    width: "100%",
   },
   saveButton: {
-    backgroundColor: "#4CAF50",
-    padding: 15,
-    borderRadius: 10,
+    backgroundColor: "#007BFF",
+    padding: 10,
+    borderRadius: 5,
     alignItems: "center",
+    width: "100%",
     marginBottom: 10,
   },
   saveButtonText: {
-    color: "#FFF",
-    fontSize: 16,
+    color: "#fff",
     fontWeight: "bold",
   },
   cancelButton: {
-    backgroundColor: "#F44336",
-    padding: 15,
-    borderRadius: 10,
+    backgroundColor: "#FF0000",
+    padding: 10,
+    borderRadius: 5,
     alignItems: "center",
+    width: "100%",
   },
   cancelButtonText: {
-    color: "#FFF",
-    fontSize: 16,
+    color: "#fff",
     fontWeight: "bold",
   },
   checkboxContainer: {
@@ -333,26 +376,5 @@ const styles = StyleSheet.create({
   checkboxText: {
     fontSize: 16,
     color: "#333",
-  },
-  deleteButton: {
-    backgroundColor: "#F44336",
-    padding: 10,
-    borderRadius: 5,
-    alignItems: "center",
-  },
-  deleteButtonText: {
-    color: "#FFF",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  searchInput: {
-    height: 50,
-    borderColor: "#CCC",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginBottom: 20,
-    backgroundColor: "#FFF",
-    fontSize: 16,
   },
 });

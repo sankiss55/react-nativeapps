@@ -175,7 +175,7 @@ const obtenerProductos = async (categoria, nombre) => {
     renderItem={({ item }) => (
       <TouchableOpacity onPress={()=>{
         navigation.navigate('Stack_productos', {screen: 'ProductosInfo',
-  params: { itemId: item.id, image: item.image_url, name: item.item_name, price: item.variants[0]?.default_price, description:item.description, }});
+  params: { itemId: item.id, image: item.image_url, name: item.item_name, price: item.variants[0]?.default_price,  }});
       }} style={{ flex: 1, margin: 10, backgroundColor: 'white', padding: 10, borderRadius: 8,  shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,

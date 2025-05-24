@@ -260,44 +260,46 @@ export default function Promociones() {
 
       <Modal visible={modalVisible} animationType="slide">
         <View style={styles.modalContainer}>
-          <Text style={styles.title}>Nueva Promoción</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nombre de la promoción"
-            value={promotionName}
-            onChangeText={setPromotionName}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Precio de la promoción"
-            keyboardType="numeric"
-            value={promotionPrice}
-            onChangeText={setPromotionPrice}
-          />
-          <View style={styles.productListContainer}>
-            <FlatList
-              data={productos}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.row,
-                    selectedProducts.includes(item) && styles.selectedRow,
-                  ]}
-                  onPress={() => toggleProductSelection(item)}
-                >
-                  <Text style={styles.itemName}>{item.item_name}</Text>
-                </TouchableOpacity>
-              )}
+          <View style={styles.modalContent}>
+            <Text style={styles.title}>Nueva Promoción</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Nombre de la promoción"
+              value={promotionName}
+              onChangeText={setPromotionName}
             />
+            <TextInput
+              style={styles.input}
+              placeholder="Precio de la promoción"
+              keyboardType="numeric"
+              value={promotionPrice}
+              onChangeText={setPromotionPrice}
+            />
+            <View style={styles.productListContainer}>
+              <FlatList
+                data={productos}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.row,
+                      selectedProducts.includes(item) && styles.selectedRow,
+                    ]}
+                    onPress={() => toggleProductSelection(item)}
+                  >
+                    <Text style={styles.itemName}>{item.item_name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+            <Button title="Crear Promoción" onPress={createPromotion} />
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.cancelButtonText}>Cancelar</Text>
+            </TouchableOpacity>
           </View>
-          <Button title="Crear Promoción" onPress={createPromotion} />
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => setModalVisible(false)}
-          >
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
-          </TouchableOpacity>
         </View>
       </Modal>
     </View>
@@ -305,115 +307,131 @@ export default function Promociones() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "#fff",
+  },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 16,
     textAlign: "center",
-    color: "#6B4226",
+    marginBottom: 20,
   },
   searchBar: {
-    height: 40,
-    borderColor: "#D3A588",
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 16,
-    backgroundColor: "#FFF8E7",
-    width: "100%",
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
   },
   row: {
     flexDirection: "row",
-    padding: 16,
-    marginVertical: 8,
-    borderWidth: 1,
-    borderColor: "#D3A588",
-    borderRadius: 12,
-    alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#FFF8E7",
+    alignItems: "center",
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
   },
   textContainer: {
     flex: 1,
   },
   itemName: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "#6B4226",
+    fontSize: 16,
   },
   price: {
     fontSize: 16,
-    fontWeight: "400",
-    color: "#6B4226",
+    fontWeight: "bold",
+  },
+  deleteButton: {
+    backgroundColor: "#FF0000",
+    padding: 5,
+    borderRadius: 5,
+  },
+  deleteButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  createButton: {
+    backgroundColor: "#007BFF",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  createButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
   modalContainer: {
     flex: 1,
-    padding: 16,
-    backgroundColor: "#FFF8E7",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Fondo translúcido oscuro
   },
-  productListContainer: {
-    flex: 1,
-    marginVertical: 16,
-    borderWidth: 1,
-    borderColor: "#D3A588",
-    borderRadius: 8,
-    backgroundColor: "#FFF",
-    width: "100%",
+  modalContent: {
+    width: "85%", // Ajustar el ancho del modal
+    height:'60%',
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 15, // Bordes redondeados
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5, // Sombra para Android
+    alignItems: "center",
   },
-  selectedRow: {
-    backgroundColor: "#D3A588",
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 15,
   },
   input: {
-    height: 40,
-    borderColor: "#D3A588",
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 16,
-    backgroundColor: "#FFF",
+    borderColor: "#ccc",
+    borderRadius: 10, // Bordes redondeados
+    padding: 10,
+    marginVertical: 10,
     width: "100%",
+    backgroundColor: "#f9f9f9", // Fondo claro
   },
-  createButton: {
-    backgroundColor: "#6B4226",
+  saveButton: {
+    backgroundColor: "#007BFF",
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10, // Bordes redondeados
     alignItems: "center",
-    marginBottom: 16,
     width: "100%",
+    marginBottom: 10,
   },
-  createButtonText: {
-    color: "#FFF",
+  saveButtonText: {
+    color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
   },
-  deleteButton: {
-    backgroundColor: "#FF6347",
-    padding: 8,
-    borderRadius: 8,
-  },
-  deleteButtonText: {
-    color: "#FFF",
-    fontWeight: "bold",
-  },
   cancelButton: {
-    backgroundColor: "#6B4226",
+    backgroundColor: "#FF6347",
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10, // Bordes redondeados
     alignItems: "center",
-    marginTop: 16,
     width: "100%",
   },
   cancelButtonText: {
-    color: "#FFF",
+    color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
   },
-  container: {
+  productListContainer: {
     flex: 1,
-    padding: 16,
-    alignItems: "center",
-    justifyContent: "center",
+    marginVertical: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    backgroundColor: "#fff",
+    width: "100%",
+  },
+  selectedRow: {
+    backgroundColor: "#007BFF",
   },
 });

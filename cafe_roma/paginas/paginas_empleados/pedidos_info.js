@@ -1,92 +1,98 @@
-import { Text, View, TouchableOpacity, ScrollView } from "react-native";
+import { Text, View, TouchableOpacity, ScrollView, Alert } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import { getFirestore, collection, getDocs, deleteDoc, doc, updateDoc, onSnapshot } from "firebase/firestore";
+import { getFirestore, collection, getDocs, deleteDoc, doc, updateDoc, onSnapshot, query, where } from "firebase/firestore";
 
 import { initializeApp } from "firebase/app";
 import firebaseConfig from "../../config_firebase/config";
 import { useState, useEffect } from "react";
-export default function Pedidos_info({ route, navigation }) {
-  const { nombre_mesa, mesa_id, pedidos } = route.params;
-  const nuevosPedidos = pedidos.filter(p => p.atendido === false);
-  const anterioresPedidos = pedidos.filter(p => p.atendido === true);
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const [pedidoss, setPedidos] = useState([]);
-const eliminarPedidosMesa = async () => {
-   
-    
- 
-  try {
-     const notasRef = collection(db, "mesas", mesa_id, "notas_productos");
-    const snapshot = await getDocs(notasRef);
+import { useNavigation } from "@react-navigation/native";
+export default function Pedidos_info({ route }) {
+  const navigation = useNavigation();
+  const { usuarioId, pedidos, id_usuario_pedido } = route.params; 
 
-    const deletePromises = snapshot.docs.map(docSnap =>
-      deleteDoc(doc(db, "mesas", mesa_id, "notas_productos", docSnap.id))
-    );
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    await Promise.all(deletePromises);
+  const [pedidosActualizados, setPedidosActualizados] = useState(
+    pedidos.map((p) => ({ ...p })) // Inicializar con los pedidos recibidos
+  );
+  const [observaciones, setObservaciones] = useState(null);
 
-    const pedidosRef = collection(db, "mesas", mesa_id, "pedidos_mesas");
-    const pedidosSnapshot = await getDocs(pedidosRef);
-     const productos = pedidosSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+  useEffect(() => {
+    const obtenerObservaciones = async () => {
+      try {
+        const observacionesRef = collection(db, "usuarios", usuarioId, "observaciones");
+        const q = query(observacionesRef, where("id_usuario", "==", id_usuario_pedido));
+        const querySnapshot = await getDocs(q);
 
-    console.log("Productos de la mesa:", productos);
-    const deletePromises2 = pedidosSnapshot.docs.map((docSnap) =>
-      deleteDoc(doc(db, "mesas", mesa_id, "pedidos_mesas", docSnap.id))
-    );
-
-    await Promise.all(deletePromises2);
-    navigation.goBack(); 
-  } catch (error) {
-    console.error("Error eliminando pedidos:", error);
-    alert("Hubo un error al eliminar los pedidos");
-  }
-};
-useEffect(() => {
-    // Referencia a la subcolección pedidos_mesas de la mesa
-    const pedidosRef = collection(db, "mesas", mesa_id, "notas_productos");
-
-    // Listener en tiempo real
-    const unsubscribe = onSnapshot(
-      pedidosRef,
-      (snapshot) => {
-        const pedidosActualizados = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setPedidos(pedidosActualizados);
-      },
-      (error) => {
-        console.error("Error escuchando pedidos:", error);
+        if (!querySnapshot.empty) {
+          const observacionData = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setObservaciones(observacionData);
+        } else {
+          setObservaciones([]);
+        }
+      } catch (error) {
+        console.error("Error al obtener las observaciones:", error);
+        Alert.alert("Error", "No se pudieron cargar las observaciones.");
       }
+    };
+
+    obtenerObservaciones();
+  }, [usuarioId, id_usuario_pedido]);
+
+  const toggleAtendido = async (pedidoId, currentStatus) => {
+    try {
+      // Actualizar en la colección "pedidos_usuarios"
+      const pedidoRef = doc(db, "usuarios", usuarioId, "pedidos_usuarios", pedidoId);
+      await updateDoc(pedidoRef, { atendido: !currentStatus });
+
+      // Actualizar en la colección "pedidos"
+      const pedidoGlobalRef = doc(db, "pedidos", pedidoId);
+      await updateDoc(pedidoGlobalRef, { atendido: !currentStatus });
+
+      // Actualizar el estado local
+      setPedidosActualizados((prevPedidos) =>
+        prevPedidos.map((p) =>
+          p.id === pedidoId ? { ...p, atendido: !currentStatus } : p
+        )
+      );
+    } catch (error) {
+      console.error("Error al actualizar el estado del pedido:", error);
+      alert("Hubo un error al actualizar el estado del pedido.");
+    }
+  };
+
+  const eliminarPedido = async (pedidoId) => {
+    try {
+      // Eliminar de la colección "pedidos_usuarios"
+      const pedidoRef = doc(db, "usuarios", usuarioId, "pedidos_usuarios", pedidoId);
+      await deleteDoc(pedidoRef);
+
+      // Eliminar de la colección "pedidos"
+      const pedidoGlobalRef = doc(db, "pedidos", pedidoId);
+      await deleteDoc(pedidoGlobalRef);
+
+      // Actualizar el estado local
+      setPedidosActualizados((prevPedidos) =>
+        prevPedidos.filter((p) => p.id !== pedidoId)
+      );
+    } catch (error) {
+      console.error("Error al eliminar el pedido:", error);
+      alert("Hubo un error al eliminar el pedido.");
+    }
+  };
+
+  if (pedidosActualizados.length === 0) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ fontSize: 18, color: "gray" }}>No hay pedidos disponibles.</Text>
+      </View>
     );
-
-    // Cleanup al desmontar componente
-    return () => unsubscribe();
-  }, [db, mesa_id]);
-const marcarPedidosComoAtendidos = async (mesaId) => {
-  try {
-    const pedidosRef = collection(db, "mesas", mesaId, "pedidos_mesas");
-    const snapshot = await getDocs(pedidosRef);
-
-    const updates = [];
-
-    snapshot.forEach((docSnap) => {
-      const pedidoDocRef = doc(db, "mesas", mesaId, "pedidos_mesas", docSnap.id);
-      updates.push(updateDoc(pedidoDocRef, { atendido: true }));
-    });
-
-    await Promise.all(updates);
-    
-    navigation.goBack(); 
-    console.log("Todos los pedidos fueron marcados como atendidos.");
-  } catch (error) {
-    console.error("Error al marcar los pedidos como atendidos:", error);
   }
-};
+
   return (
     <View style={{ flex: 1, backgroundColor: "#f5f5f5" }}>
       {/* Barra superior */}
@@ -101,142 +107,82 @@ const marcarPedidosComoAtendidos = async (mesaId) => {
           backgroundColor: "#fff",
         }}
       >
-        {/* Botón de retroceso */}
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
-
-        {/* Estado en rojo */}
-        <TouchableOpacity
-         onPress={() => marcarPedidosComoAtendidos(mesa_id)}
-          style={{
-            backgroundColor: "#E50000",
-            paddingVertical: 6,
-            paddingHorizontal: 12,
-            borderRadius: 12,
-          }}
-        >
-          <Text style={{ color: "white", fontWeight: "bold", fontSize: 12 }}>
-            Atendido en espera de pago
-          </Text>
-        </TouchableOpacity>
+        <Text style={{ fontSize: 18, fontWeight: "bold" }}>Pedidos de Usuario</Text>
       </View>
 
       <ScrollView style={{ padding: 20 }}>
-        {/* Título de la orden */}
-        <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 20 }}>
-          Orden {nombre_mesa}
-        </Text>
-
-        {/* Nuevos pedidos */}
-        {nuevosPedidos.length > 0 && (
-          <View style={{ marginBottom: 30 }}>
-            <Text
-              style={{
-                fontSize: 22,
-                fontWeight: "bold",
-                marginBottom: 10,
-                textAlign: "center",
-              }}
+        {pedidosActualizados.map((p, index) => (
+          <View
+            key={`pedido-${index}`}
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 10,
+              backgroundColor: "#fff",
+              padding: 10,
+              borderRadius: 8,
+              shadowColor: "#000",
+              shadowOpacity: 0.1,
+              shadowRadius: 5,
+              elevation: 2,
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => toggleAtendido(p.id, p.atendido)}
+              style={{ flex: 1, flexDirection: "row", alignItems: "center" }}
             >
-              Nuevos Pedidos
-            </Text>
-            {nuevosPedidos.map((p, index) => (
-              <View
-                key={`nuevo-${index}`}
+              <Icon
+                name={p.atendido ? "checkmark-circle" : "ellipse-outline"}
+                size={24}
+                color={p.atendido ? "green" : "gray"}
+                style={{ marginRight: 10 }}
+              />
+              <Text
                 style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginBottom: 10,
+                  textDecorationLine: p.atendido ? "line-through" : "none", // Línea en medio si está atendido
+                  color: p.atendido ? "green" : "black", // Color verde si está atendido
                 }}
               >
-                <Text>{`${p.pedido} X${p.cantidad}`}</Text>
-                <Text>{`$${(p.precio_unitario * p.cantidad).toFixed(2)}`}</Text>
+                {`${p.pedido} X${p.cantidad}`}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => eliminarPedido(p.id)}>
+              <Icon name="trash" size={24} color="red" />
+            </TouchableOpacity>
+          </View>
+        ))}
+
+        {/* Mostrar observaciones */}
+        {observaciones && observaciones.length > 0 && (
+          <View style={{ marginTop: 20 }}>
+            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
+              Observaciones:
+            </Text>
+            {observaciones.map((obs) => (
+              <View
+                key={obs.id}
+                style={{
+                  backgroundColor: "#fff",
+                  padding: 10,
+                  borderRadius: 8,
+                  marginBottom: 10,
+                  shadowColor: "#000",
+                  shadowOpacity: 0.1,
+                  shadowRadius: 5,
+                  elevation: 2,
+                }}
+              >
+                <Text style={{ fontSize: 16, color: "black" }}>{obs.observacion}</Text>
+                <Text style={{ fontSize: 12, color: "gray" }}>{obs.fecha}</Text>
               </View>
             ))}
           </View>
         )}
-
-        {/* Pedidos anteriores */}
-        {anterioresPedidos.length > 0 && (
-          <View style={{ marginBottom: 30 }}>
-            <Text
-              style={{
-                fontSize: 22,
-                fontWeight: "bold",
-                marginBottom: 10,
-                textAlign: "center",
-              }}
-            >
-              Órdenes Anteriores
-            </Text>
-            {anterioresPedidos.map((p, index) => (
-              <View
-                key={`anterior-${index}`}
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  marginBottom: 10,
-                }}
-              >
-                <Text>{`${p.pedido} X${p.cantidad}`}</Text>
-                <Text>{`$${(p.precio_unitario * p.cantidad).toFixed(2)}`}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-          <View style={{ marginBottom: 30 }}>
-    <Text
-      style={{
-        fontSize: 22,
-        fontWeight: "bold",
-        marginBottom: 10,
-        textAlign: "center",
-      }}
-    >
-      Observaciones
-    </Text>
-    {pedidoss.length === 0 ? (
-      <Text style={{ fontStyle: "italic", textAlign: "center" }}>
-        No hay observaciones.
-      </Text>
-    ) : (
-      pedidoss.map((obs, index) => (
-        <View
-          key={`observacion-${index}`}
-          style={{
-            backgroundColor: "#fff",
-            padding: 15,
-            borderRadius: 8,
-            marginBottom: 10,
-            shadowColor: "#000",
-            shadowOpacity: 0.1,
-            shadowRadius: 5,
-            elevation: 2,
-          }}
-        >
-          <Text>{obs.observaciones}</Text>
-        </View>
-      ))
-    )}
-  </View>
       </ScrollView>
-
-      {/* Botón Terminar Pedido */}
-      <View style={{ padding: 20 }}>
-        <TouchableOpacity 
-  onPress={eliminarPedidosMesa}
-          style={{
-            backgroundColor: "#FFDE67",
-            paddingVertical: 14,
-            borderRadius: 10,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ fontWeight: "bold" }}
- >Terminar Pedido</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }

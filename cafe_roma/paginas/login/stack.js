@@ -12,7 +12,13 @@ import Admin from "../paginas_admin/admin";
 import Promociones from "../paginas_admin/promociones";
 import GestionAdmin from "../paginas_admin/gestion_admin";
 import Usuarios_categoria from "../paginas_admin/usuarios_categoria";
+import CrearQR from "../paginas_admin/crearQR";
+import Mesas from "../paginas_admin/mesas";
+import GestionVentanilla from "../paginas_admin/usuario_ventana";
+import PedidosCajeros from "../cajeros/pedidos_cajeros";
+import PedidosTerminados from "../cajeros/pedido_terminado";
 const Stack= createStackNavigator();
+
 export default function App() {
   return (
         <NavigationContainer>
@@ -27,6 +33,11 @@ export default function App() {
              <Stack.Screen name="promos" component={Promociones} options={{ headerShown:false,}} />
         <Stack.Screen name="GestionAdmin" component={GestionAdmin} options={{ headerShown:false,}} />
          <Stack.Screen name="Usuarios_categoria" component={Usuarios_categoria} options={{ headerShown:false,}} />
+         <Stack.Screen name="Qr" component={CrearQR} options={{ headerShown:false,}} />
+          <Stack.Screen name="mesas" component={Mesas} options={{ headerShown:false,}} />
+          <Stack.Screen name="GestionVentanilla" component={GestionVentanilla} options={{ headerShown:false,}} />
+            <Stack.Screen name="PedidosCajeros" component={PedidosCajeros} options={{ headerShown:false,}} />
+             <Stack.Screen name="PedidosTerminados" component={PedidosTerminados} options={{ headerShown:false,}} />
       </Stack.Navigator>
     </NavigationContainer>
 

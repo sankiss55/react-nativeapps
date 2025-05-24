@@ -26,13 +26,13 @@ export default function Tiket() {
 
       if (!mesasSnapshot.empty) {
         const mesaDoc = mesasSnapshot.docs[0];
-        const pedidosRef = subCollection(db, "mesas", mesaDoc.id, "pedidos_mesas");
+        const pedidosRef = collection(db, "mesas", mesaDoc.id, "pedidos_mesas");
         const pedidosSnapshot = await getDocs(pedidosRef);
 
-        const productosData = [];
-        pedidosSnapshot.forEach((doc) => {
-          productosData.push({ id: doc.id, ...doc.data() });
-        });
+        const productosData = pedidosSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setProductos(productosData);
       } else {
         console.log("No se encontró la mesa");

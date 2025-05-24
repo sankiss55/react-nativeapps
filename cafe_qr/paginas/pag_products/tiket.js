@@ -1,8 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
+import { getFirestore, collection, query, where, onSnapshot } from "firebase/firestore";
+import { initializeApp } from "firebase/app";
+import firebaseConfig from "../../config_firebase/config";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 export default function Tiket() {
   const [productos, setProductos] = useState([]);
@@ -14,20 +20,44 @@ export default function Tiket() {
       const fetchData = async () => {
         const nombre = await AsyncStorage.getItem('nombre_mesa');
         const cafe = await AsyncStorage.getItem('nombre_cafeteria');
+        const idUsuario = await AsyncStorage.getItem('id_usuario'); // Obtener el id_usuario
         setNombreMesa(nombre);
         setCafeteria(cafe);
 
-        // Recuperar los pedidos realizados desde AsyncStorage
-        const pedidosRealizados = await AsyncStorage.getItem('pedidos_realizados');
-        console.error(pedidosRealizados);
-        const parsedPedidos = pedidosRealizados ? JSON.parse(pedidosRealizados) : {};
+        if (idUsuario) {
+          try {
+            // Configurar oyente en tiempo real
+            const pedidosRef = collection(db, "pedidos");
+            const q = query(pedidosRef, where("id_usuario", "==", idUsuario));
+            const unsubscribe = onSnapshot(q, (querySnapshot) => {
+              const pedidosArray = querySnapshot.docs.map(doc => doc.data());
 
-        // Convertir el array de objetos en un array plano de productos
-        const pedidosArray = pedidosRealizados
-          ? JSON.parse(pedidosRealizados).flatMap((pedido) => Object.values(pedido))
-          : [];
-        console.info(pedidosArray);
-        setProductos(pedidosArray);
+              // Procesar los productos para agrupar promociones
+              const productosProcesados = pedidosArray.reduce((acc, prod) => {
+                if (prod.promo) {
+                  const [promoName, promoId] = prod.promo.split('|');
+                  const promoGroup = acc.find(item => item.promoId === promoId);
+                  if (promoGroup) {
+                    promoGroup.items.push(prod);
+                    promoGroup.total += prod.precio_unitario * prod.cantidad;
+                    promoGroup.quantity += prod.cantidad;
+                  } else {
+                    acc.push({ promoName, promoId, total: prod.precio_unitario * prod.cantidad, quantity: prod.cantidad, items: [prod] });
+                  }
+                } else {
+                  acc.push(prod);
+                }
+                return acc;
+              }, []);
+
+              setProductos(productosProcesados);
+            });
+
+            return () => unsubscribe(); // Limpiar el oyente al desmontar
+          } catch (error) {
+            console.error("Error al obtener los pedidos:", error);
+          }
+        }
       };
 
       fetchData();
@@ -42,16 +72,41 @@ export default function Tiket() {
 
       {productos.length > 0 ? (
         <>
-          {productos.map((prod, index) => (
-            <View key={index} style={styles.lineItem}>
-              <Text style={styles.itemText}>
-                {prod.name} x {prod.quantity} - ${prod.price * prod.quantity}
-              </Text>
-            </View>
-          ))}
+          {productos.map((prod, index) => {
+            if (prod.promoName) {
+              // Renderizar promociones
+              return (
+                <View key={index} style={styles.promoContainer}>
+                  <Text style={styles.promoTitle}>
+                    Promoción: {prod.promoName}  - ${prod.total.toFixed(2)}
+                  </Text>
+                 
+                  {prod.items.map((item, idx) => (
+                    <Text key={idx} style={styles.itemText}>
+                      {item.pedido}
+                    </Text>
+                  ))}
+                </View>
+              );
+            } else {
+              // Renderizar productos normales
+              return (
+                <View key={index} style={styles.lineItem}>
+                  <Text style={styles.itemText}>
+                    {prod.pedido} x {prod.cantidad} - ${prod.precio_unitario * prod.cantidad}
+                  </Text>
+                </View>
+              );
+            }
+          })}
           <View style={styles.totalContainer}>
             <Text style={styles.totalText}>
-              TOTAL: ${productos.reduce((acc, prod) => acc + prod.price * prod.quantity, 0).toFixed(2)}
+              TOTAL: ${productos.reduce((acc, prod) => {
+                if (prod.promoName) {
+                  return acc + prod.total;
+                }
+                return acc + prod.precio_unitario * prod.cantidad;
+              }, 0).toFixed(2)}
             </Text>
           </View>
         </>
@@ -111,5 +166,17 @@ const styles = StyleSheet.create({
     color: "#999",
     fontStyle: "italic",
     marginTop: 30,
+  },
+  promoContainer: {
+    marginBottom: 15,
+    padding: 10,
+    backgroundColor: "#F0E6D2",
+    borderRadius: 5,
+  },
+  promoTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#3E2C18",
+    marginBottom: 5,
   },
 });

@@ -9,7 +9,14 @@ export default function Index() {
   const navigation = useNavigation();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
-
+const generarID = (longitud = 12) => {
+  const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let resultado = '';
+  for (let i = 0; i < longitud; i++) {
+    resultado += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+  }
+  return resultado;
+};
   useEffect(() => {
     const checkSession = async () => {
       const qrSession = await AsyncStorage.getItem('qr_session');
@@ -49,6 +56,7 @@ export default function Index() {
   await AsyncStorage.setItem('nombre_cafeteria', cafeteria);
   await AsyncStorage.setItem('qr_session', 'active');
 
+  await AsyncStorage.setItem('id_usuario', generarID());
   navigation.replace('Tabs', {
     screen: 'ProductosStack',
     params: {

@@ -149,6 +149,7 @@ const obtenerProductos = async (categoria, nombre) => {
 
   {/* Botones dinámicos */}
   {categories.map((cat) => (
+    
     <TouchableOpacity
       key={cat.id}
       style={[
@@ -174,7 +175,8 @@ const obtenerProductos = async (categoria, nombre) => {
     contentContainerStyle={{ paddingBottom: 100 }}
     renderItem={({ item }) => (
       <TouchableOpacity onPress={()=>{
-        navigation.navigate('ProductosInfo', { itemId: item.id, image: item.image_url, name: item.item_name, price: item.variants[0]?.default_price, description:item.description, categoria: item.category_id });
+
+        navigation.navigate('ProductosInfo', { itemId: item.id, image: item.image_url, name: item.item_name, price: item.variants[0]?.default_price, description:item.description, categoria: item.category_id, descripcion:item.description});
       }} style={{ flex: 1, margin: 10, backgroundColor: 'white', padding: 10, borderRadius: 8,  shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,

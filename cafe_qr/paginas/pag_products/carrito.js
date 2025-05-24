@@ -5,11 +5,11 @@ import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
-import { getFirestore, collection, query, where, getDocs, addDoc } from "firebase/firestore";
+import { getFirestore, collection, query, where, getDocs, addDoc, doc, setDoc } from "firebase/firestore";
 import { initializeApp } from "firebase/app";
 import firebaseConfig from "../../config_firebase/config";
+import accessToken from "../../config_loyverce/config";
 import { AlertNotificationRoot,ALERT_TYPE, Toast,Dialog } from 'react-native-alert-notification';
-
 export default function Carrito() {
   const navigation = useNavigation();
   const [text_input, settext_input]=useState('');
@@ -52,9 +52,65 @@ useFocusEffect(
       return;
     }
 
-    const nombreCafeteria = await AsyncStorage.getItem('nombre_cafeteria');
+    // Verificar si algún producto tiene descripción con array
+    const expandedCart = [];
+    for (const item of Object.values(parsedCart)) {
+      
+          
+const numeroRandom =Math.floor(1000000000 + Math.random() * 9000000000);
+      if (item.description && Array.isArray(item.description.articulos)) {
+        for (const articulo of item.description.articulos) {
+          try {
+            console.log(articulo.articulo.id_articulo);
+            // Realizar petición a la API de Loyverse para obtener todos los productos
+            const response = await fetch(`https://api.loyverse.com/v1.0/items`, {
+              method: 'GET',
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            });
 
-    // 1. Buscar usuarios que coincidan con la cafetería
+            if (!response.ok) {
+              const errorBody = await response.json();
+              console.error(`Error al obtener productos para ${articulo.articulo.nombre}:`, errorBody);
+              continue; // Continuar con el siguiente artículo
+            }
+
+            const productsData = await response.json();
+            // Filtrar el producto por id_articulo
+            const product = productsData.items.find(
+              (item) => item.id === articulo.articulo.id_articulo
+            );
+
+            if (!product) {
+              console.error(`No se encontró el producto con id ${articulo.articulo.id_articulo}`);
+              continue; // Continuar si no se encuentra el producto
+            }
+
+            expandedCart.push({
+              id: articulo.articulo.id_articulo,
+              name: articulo.articulo.nombre,
+              price: item.price / item.description.articulos.length, // Dividir precio proporcionalmente
+              quantity: item.quantity,
+              categoria: item.categoria,
+              descripcion: articulo.descripcion,
+              promo:item.name+'|'+numeroRandom+'|'+item.price ,
+               
+            });
+          } catch (error) {
+            console.error(`Error inesperado al procesar ${articulo.articulo.nombre}:`, error);
+            continue; // Continuar con el siguiente artículo
+          }
+        }
+      } else {
+        expandedCart.push(item);
+      }
+    }
+
+    console.log('Expanded Cart:', expandedCart);
+
+    // Procesar el carrito expandido
+    const nombreCafeteria = await AsyncStorage.getItem('nombre_cafeteria');
     const usuariosRef = collection(db, "usuarios");
     const q = query(usuariosRef, where("cafeteria", "==", nombreCafeteria));
     const querySnapshot = await getDocs(q);
@@ -64,73 +120,95 @@ useFocusEffect(
       return;
     }
 
-    // 2. Filtrar manualmente los usuarios que no sean "admin"
     const filteredUsers = querySnapshot.docs.filter((doc) => doc.data().campo !== "admin");
-
     if (filteredUsers.length === 0) {
       alert("No se encontraron usuarios válidos para procesar el pedido.");
       return;
     }
 
-    // 3. Verificar si el usuario tiene la categoría del producto pedido
     const addPromises = [];
-    filteredUsers.forEach((doc) => {
-      const userData = doc.data();
-      console.log('User Data:', userData);
-      const userId = doc.id;
+    for (const docSnapshot of filteredUsers) {
+      const userData = docSnapshot.data();
+      const userId = docSnapshot.id;
 
-      const hasCategory = Object.values(parsedCart).some((item) =>
+      const hasCategory = expandedCart.some((item) =>
         Array.isArray(userData.categorias) && userData.categorias.includes(item.categoria)
       );
 
       if (hasCategory) {
-        // Crear la colección "pedidos_usuarios" si no existe y agregar documentos
         const pedidosRef = collection(db, "usuarios", userId, "pedidos_usuarios");
+        const pedidosGlobalRef = collection(db, "pedidos");
+        const mesa = await AsyncStorage.getItem('nombre_mesa');
+        const nombre_cafeteria = await AsyncStorage.getItem('nombre_cafeteria');
+        const id_usuario = await AsyncStorage.getItem('id_usuario');
 
-        Object.values(parsedCart).forEach((item) => {
+        for (const item of expandedCart) {
+          const pedidoDocRef = doc(pedidosRef); // Crear referencia al documento
+          const pedidoId = pedidoDocRef.id; // Obtener el ID generado
+
+          // Insertar en pedidos_usuarios
           addPromises.push(
-            addDoc(pedidosRef, {
+            setDoc(pedidoDocRef, {
               id_producto: item.id,
               pedido: item.name,
               cantidad: item.quantity,
               precio_unitario: item.price,
               atendido: false,
+              mesa,
+              nombre_cafeteria,
+              id_usuario,
+              promo: item.promo ?? null,
             })
           );
-        });
 
-        // Crear la colección "observaciones" y guardar la observación del usuario
-        const observacionesRef = collection(db, "usuarios", userId, "observaciones");
-        if(text_input!==''){
-addPromises.push(
-          addDoc(observacionesRef, {
-            observacion: text_input, // Guardar el texto ingresado por el usuario
-            fecha: new Date().toISOString(),
-          })
-        );
+          // Insertar en pedidos con el mismo ID
+          addPromises.push(
+            setDoc(doc(pedidosGlobalRef, pedidoId), {
+              id_producto: item.id,
+              pedido: item.name,
+              cantidad: item.quantity,
+              precio_unitario: item.price,
+              atendido: false,
+              mesa,
+              nombre_cafeteria,
+              id_usuario,
+              categoria: item.categoria,
+              descripcion: item.descripcion || null,
+              fecha: new Date().toISOString(),
+              promo: item.promo ?? null,
+            })
+          );
         }
-      } else {
-        console.error("El usuario no tiene la categoría requerida:", hasCategory);
+
+        if (text_input !== '') {
+          const observacionesRef = collection(db, "usuarios", userId, "observaciones");
+          const qrSessionId = await AsyncStorage.getItem('id_usuario');
+          addPromises.push(
+            addDoc(observacionesRef, {
+              observacion: `${text_input} `,
+              id_usuario: qrSessionId,
+              fecha: new Date().toISOString(),
+            })
+          );
+        }
       }
-    });
+    }
+
 
     await Promise.all(addPromises);
 
-    // Agregar el pedido actual a la lista de pedidos realizados
     const existingPedidos = await AsyncStorage.getItem('pedidos_realizados');
-    let parsedPedidos = existingPedidos ? JSON.parse(existingPedidos) : []; // Asegurarse de que sea un array
+    let parsedPedidos = existingPedidos ? JSON.parse(existingPedidos) : [];
     if (!Array.isArray(parsedPedidos)) {
-      console.error("El valor de 'pedidos_realizados' no es un array. Se inicializará como un array vacío.");
       parsedPedidos = [];
     }
-    parsedPedidos.push(parsedCart); // Agregar el carrito actual a la lista
+    parsedPedidos.push(expandedCart);
     await AsyncStorage.setItem('pedidos_realizados', JSON.stringify(parsedPedidos));
 
-    // 4. Limpiar carrito y observaciones
     await AsyncStorage.removeItem('cart');
     setCart({});
     setTotalPrice(0);
-    settext_input(''); // Limpiar el campo de texto
+    settext_input('');
 
     Dialog.show({
       type: ALERT_TYPE.SUCCESS,

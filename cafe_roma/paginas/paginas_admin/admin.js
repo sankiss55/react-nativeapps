@@ -6,6 +6,7 @@ import { Col, Row, Grid } from "react-native-easy-grid";
 import { useFonts } from '@expo-google-fonts/poppins/useFonts';
 import { useNavigation } from "@react-navigation/native";
 import { Poppins_400Regular } from '@expo-google-fonts/poppins/400Regular';
+import { ScrollView } from "react-native-gesture-handler";
 
 
 export default function Admin({route}){
@@ -18,7 +19,7 @@ const navigation = useNavigation();
 return(
   
   
-   <View style={style.container}>
+   <ScrollView style={style.container}>
     <View style={style.container_top}>
         <TouchableOpacity style={style.btn_salir} onPress={()=>{
             navigation.navigate('Admin');
@@ -41,7 +42,9 @@ return(
     </Text>
     <Grid style={style.grid}>
      <Row style={{ height: 200 }}>
-         <Options_admin text={'Gestión completa de mesas'}  icon={<Svg xmlns="http://www.w3.org/2000/svg" height="34px" viewBox="0 -960 960 960" width="34px" fill="#000000"><Path d="M440-80v-520H80l400-280 400 280H520v520h-80Zm40-600h146-292 146ZM120-80v-210L88-466l78-14 30 160h164v240h-80v-160h-80v160h-80Zm480 0v-240h164l30-160 78 14-32 176v210h-80v-160h-80v160h-80ZM334-680h292L480-782 334-680Z"/></Svg>} title={'Mesas'} color={"#C2E0F2"} />
+         <Options_admin text={'Gestión completa de mesas'}  onPress={()=>{
+    navigate.navigate('mesas');
+}}    icon={<Svg xmlns="http://www.w3.org/2000/svg" height="34px" viewBox="0 -960 960 960" width="34px" fill="#000000"><Path d="M440-80v-520H80l400-280 400 280H520v520h-80Zm40-600h146-292 146ZM120-80v-210L88-466l78-14 30 160h164v240h-80v-160h-80v160h-80Zm480 0v-240h164l30-160 78 14-32 176v210h-80v-160h-80v160h-80ZM334-680h292L480-782 334-680Z"/></Svg>} title={'Mesas'} color={"#C2E0F2"} />
      
         
 <Options_admin text={'Gestión completa de usuarios'} onPress={()=>{
@@ -55,9 +58,12 @@ navigate.navigate('promos');
        }} color={'#F9DECD'} />
 </Row>
 
-    
+<Row style={{ height: 200,}}>
+      <Options_admin text={'Gestión completa de Cajeros'} onPress={()=>{navigate.navigate('Qr')}}  icon={<Svg xmlns="http://www.w3.org/2000/svg" height="34px" viewBox="0 -960 960 960" width="34px" fill="#000000"><Path d="M200-400v-80h80v80h-80Zm-80-80v-80h80v80h-80Zm360-280v-80h80v80h-80ZM180-660h120v-120H180v120Zm-60 60v-240h240v240H120Zm60 420h120v-120H180v120Zm-60 60v-240h240v240H120Zm540-540h120v-120H660v120Zm-60 60v-240h240v240H600ZM360-400v-80h-80v-80h160v160h-80Zm40-200v-160h80v80h80v80H400Zm-190-90v-60h60v60h-60Zm0 480v-60h60v60h-60Zm480-480v-60h60v60h-60Zm-50 570v-120H520v-80h120v-120h80v120h120v80H720v120h-80Z"/></Svg>} title={'Crea Qr'} color={'#CCA9DD'} />
+         <Options_admin text={'Gestion completa de  Cajero(a) '} onPress={()=>{navigate.navigate('GestionVentanilla')}}  icon={<Svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"><Path d="M280-640q-33 0-56.5-23.5T200-720v-80q0-33 23.5-56.5T280-880h400q33 0 56.5 23.5T760-800v80q0 33-23.5 56.5T680-640H280Zm0-80h400v-80H280v80ZM160-80q-33 0-56.5-23.5T80-160v-40h800v40q0 33-23.5 56.5T800-80H160ZM80-240l139-313q10-22 30-34.5t43-12.5h376q23 0 43 12.5t30 34.5l139 313H80Zm260-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm120 160h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm120 160h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Zm0-80h40q8 0 14-6t6-14q0-8-6-14t-14-6h-40q-8 0-14 6t-6 14q0 8 6 14t14 6Z"/></Svg>} title={'Cajeros'} color={'#EA899A'} />
+</Row>
     </Grid>
-   </View>
+   </ScrollView>
   
 )
 }

@@ -13,99 +13,139 @@ export default function Pag_pedidos({ route }) {
     const navigation = useNavigation();
      const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-  const {campo, cafeteria, nombre } = route.params;
+  const {campo, cafeteria, nombre, usuario, password } = route.params;
   const [mesas, setMesas] = useState([]);
 useEffect(() => {
-  const mesasRef = collection(db, "mesas");
-  const q = query(mesasRef, where("cafeteria", "==", cafeteria));
+  const usuariosRef = collection(db, "usuarios");
+  const q = query(
+    usuariosRef,
+    where("usuario", "==", usuario),
+    where("password", "==", password),
+    where("campo", "==", campo)
+  );
 
-  const unsubscribePedidosList = [];
-  const unsubscribeMesas = onSnapshot(q, (querySnapshot) => {
-    const mesasData = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+  const unsubscribeUsuarios = onSnapshot(q, (querySnapshot) => {
+    const pedidosUsuarios = [];
 
-    const mesasConPedidos = [];
-    mesasData.forEach((mesa) => {
-      
-      const pedidosRef = collection(db, "mesas", mesa.id, "pedidos_mesas");
-      const unsubscribe = onSnapshot(pedidosRef, (pedidosSnap) => {
-        const pedidos = pedidosSnap.docs.map((p) => p.data());
-        // Actualiza la lista de mesas con los pedidos nuevos
-        const index = mesasConPedidos.findIndex((m) => m.id === mesa.id);
-        if (index !== -1) {
-          mesasConPedidos[index] = { ...mesa, pedidos };
+    querySnapshot.forEach((doc) => {
+      const usuarioId = doc.id;
+      const pedidosRef = collection(db, "usuarios", usuarioId, "pedidos_usuarios");
+
+      const unsubscribePedidos = onSnapshot(pedidosRef, (pedidosSnap) => {
+        const pedidos = pedidosSnap.docs.map((pedidoDoc) => ({
+          id: pedidoDoc.id,
+          ...pedidoDoc.data(),
+        }));
+
+        const usuarioIndex = pedidosUsuarios.findIndex(u => u.usuarioId === usuarioId);
+        if (usuarioIndex !== -1) {
+          pedidosUsuarios[usuarioIndex].pedidos = pedidos;
         } else {
-          mesasConPedidos.push({ ...mesa, pedidos });
+          pedidosUsuarios.push({
+            usuarioId,
+            pedidos,
+          });
         }
 
-        // Refresca la UI
-        setMesas([...mesasConPedidos]);
+        setMesas([...pedidosUsuarios]); // Actualiza el estado con los pedidos
       });
 
-      unsubscribePedidosList.push(unsubscribe);
+      // Cleanup para cada oyente de pedidos
+      return () => unsubscribePedidos();
     });
   });
-  return () => {
-    unsubscribeMesas();
-    unsubscribePedidosList.forEach((unsub) => unsub());
-  };
-}, []);
+
+  // Cleanup para el oyente de usuarios
+  return () => unsubscribeUsuarios();
+}, [campo, usuario, password]);
 const colores = ["#AEF2BF", "#F9DECD", "#FEE8A1", "#FFFFFF"];
 
 
   return (
     <View style={styles.container}>
-        <View style={styles.container_top}>
-                <TouchableOpacity style={styles.btn_salir} onPress={()=>{
-                    navigation.navigate('Admin');
-                    navigation.reset({
-                        index:0,
-                        routes:[{name:'Admin'}]
-                    })
-                }} >
-                    <Text style={{ fontFamily: "Poppins_400Regular", fontSize: 14, fontWeight:'bold', color: "black", }}>
-                        Salir
-                    </Text>
-                    <Svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"><Path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z"/></Svg>
-                </TouchableOpacity>
-            </View>
+      <View style={styles.container_top}>
+        <TouchableOpacity
+          style={styles.btn_salir}
+          onPress={() => {
+            navigation.navigate("Admin");
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Admin" }],
+            });
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: "Poppins_400Regular",
+              fontSize: 14,
+              fontWeight: "bold",
+              color: "black",
+            }}
+          >
+            Salir
+          </Text>
+          <Svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="black"><Path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z"/></Svg>
+        </TouchableOpacity>
+      </View>
       <Text style={styles.titulo}>Hola, {nombre} </Text>
-      <Text style={styles.subtitulo}>Pedidos {campo}</Text>
-
+      <Text style={styles.subtitulo}>Pedidos de Usuarios</Text>
       <ScrollView>
         <Grid>
-          {
-          mesas.map((mesa, index) => (
-          mesa.pedidos.length > 0 && (
-            <Row key={mesa.id} style={styles.row_mesas}>
-              <Pedidos_mesas
-              opacity={mesa.pedidos?.some(p => p.atendido === false) ? 1 : 0.5}
-               onPress={() => navigation.navigate('Pedidos_info',{
-nombre_mesa:mesa.nombre_mesa,
-mesa_id:mesa.id,
-pedidos:mesa.pedidos,
-               })}
-                title={mesa.nombre_mesa || "Mesa"}
-                 text={`Estado: ${mesa.pedidos?.some(p => p.atendido === false) 
-    ? 'Con pedidos' 
-    : "Atendido"}`}
-                icon={
-                  <Svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    height="34px"
-                    viewBox="0 -960 960 960"
-                    width="34px"
-                    fill="#000000"
-                  >
-                    <Path d="M440-80v-520H80l400-280 400 280H520v520h-80Zm40-600h146-292 146ZM120-80v-210L88-466l78-14 30 160h164v240h-80v-160h-80v160h-80Zm480 0v-240h164l30-160 78 14-32 176v210h-80v-160h-80v160h-80ZM334-680h292L480-782 334-680Z" />
-                  </Svg>
-          }
-          color={colores[index % colores.length]}
-              />
-            </Row>
-          )))}
+          {mesas.map((usuario, index) => {
+            const pedidosPorMesa = usuario.pedidos.reduce((acc, pedido) => {
+              const { mesa } = pedido;
+
+              if (mesa === "parallevar") {
+                acc[`${mesa}-${pedido.id}`] = [pedido];
+              } else {
+                if (!acc[mesa]) {
+                  acc[mesa] = [];
+                }
+                acc[mesa].push(pedido);
+              }
+
+              return acc;
+            }, {});
+
+            return Object.keys(pedidosPorMesa)
+              .filter(
+                (mesa) =>
+                  pedidosPorMesa[mesa].filter((p) => !p.atendido).length > 0
+              ) // Filtrar mesas con pendientes
+              .map((mesa, mesaIndex) => (
+                <Row
+                  key={`${usuario.usuarioId}-${mesa}`}
+                  style={styles.row_mesas}
+                >
+                  <Pedidos_mesas
+                    opacity={
+                      pedidosPorMesa[mesa].some((p) => !p.atendido) ? 1 : 0.5
+                    }
+                    onPress={() =>
+                      navigation.navigate("Pedidos_info", {
+                        usuarioId: usuario.usuarioId,
+                        pedidos: pedidosPorMesa[mesa],
+                        id_usuario_pedido:pedidosPorMesa[mesa][0].id_usuario,
+                      })
+                    }
+                    title={
+                      mesa.includes("parallevar")
+                        ? "Pedido: Para llevar"
+                        : `Pedido para: ${mesa}`
+                    }
+                    text={`Pedidos: ${
+                      pedidosPorMesa[mesa].length
+                    } | Pendientes: ${
+                      pedidosPorMesa[mesa].filter((p) => !p.atendido).length
+                    }`}
+                    icon={
+                      <Svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="black"><Path d="M173-600h614l-34-120H208l-35 120Zm307-60Zm192 140H289l-11 80h404l-10-80ZM160-160l49-360h-89q-20 0-31.5-16T82-571l57-200q4-13 14-21t24-8h606q14 0 24 8t14 21l57 200q5 19-6.5 35T840-520h-88l48 360h-80l-27-200H267l-27 200h-80Z"/></Svg>
+                    }
+                    color={colores[(index + mesaIndex) % colores.length]}
+                  />
+                </Row>
+              ));
+          })}
         </Grid>
       </ScrollView>
     </View>
