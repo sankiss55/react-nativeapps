@@ -5,12 +5,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function Salir() {
   const navigation = useNavigation();
   const handleSalir = async () => {
-    // Lógica para cerrar sesión o salir
-    console.log('Usuario ha salido');
-      await AsyncStorage.removeItem('qr_session'); // Eliminar la sesión activa
-        await AsyncStorage.removeItem('nombre_mesa');
-        await AsyncStorage.removeItem('nombre_cafeteria');
-    // Redirigir a la pantalla de inicio o login
     navigation.replace('Index'); // Asegúrate de tener una pantalla llamada 'Login'
   };
 

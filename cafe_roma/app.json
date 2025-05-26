@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "cafe_roma",
+    "name": "Cafe Roma Negocios",
     "slug": "cafe_roma",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./img/logo_app.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./img/logo_app.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,14 +17,17 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./img/logo_app.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.santiago_vs.cafe_roma"
+      "package": "com.santiago_vs.cafe_roma",
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./img/logo_app.png"
     },
     "plugins": [
       "expo-font",
@@ -33,8 +36,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "6eabafe5-5213-4bcb-80bc-19b39bb357bf"
+        "projectId": "568b62be-fc4b-4b5c-9926-db3cf0fca14f"
       }
-    }
+    },
+    "owner": "sanprogramer1"
   }
 }

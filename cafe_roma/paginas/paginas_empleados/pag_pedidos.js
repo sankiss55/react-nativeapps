@@ -96,7 +96,12 @@ const colores = ["#AEF2BF", "#F9DECD", "#FEE8A1", "#FFFFFF"];
               const { mesa } = pedido;
 
               if (mesa === "parallevar") {
-                acc[`${mesa}-${pedido.id}`] = [pedido];
+                // Agrupar pedidos "para llevar" por id_usuario
+                const key = `parallevar-${pedido.id_usuario}`;
+                if (!acc[key]) {
+                  acc[key] = [];
+                }
+                acc[key].push(pedido);
               } else {
                 if (!acc[mesa]) {
                   acc[mesa] = [];
@@ -125,12 +130,12 @@ const colores = ["#AEF2BF", "#F9DECD", "#FEE8A1", "#FFFFFF"];
                       navigation.navigate("Pedidos_info", {
                         usuarioId: usuario.usuarioId,
                         pedidos: pedidosPorMesa[mesa],
-                        id_usuario_pedido:pedidosPorMesa[mesa][0].id_usuario,
+                        id_usuario_pedido: pedidosPorMesa[mesa][0].id_usuario,
                       })
                     }
                     title={
                       mesa.includes("parallevar")
-                        ? "Pedido: Para llevar"
+                        ? `Para llevar: Cliente ${pedidosPorMesa[mesa][0].mesa.split('-')[1] }`
                         : `Pedido para: ${mesa}`
                     }
                     text={`Pedidos: ${
@@ -139,7 +144,7 @@ const colores = ["#AEF2BF", "#F9DECD", "#FEE8A1", "#FFFFFF"];
                       pedidosPorMesa[mesa].filter((p) => !p.atendido).length
                     }`}
                     icon={
-                      <Svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="black"><Path d="M173-600h614l-34-120H208l-35 120Zm307-60Zm192 140H289l-11 80h404l-10-80ZM160-160l49-360h-89q-20 0-31.5-16T82-571l57-200q4-13 14-21t24-8h606q14 0 24 8t14 21l57 200q5 19-6.5 35T840-520h-88l48 360h-80l-27-200H267l-27 200h-80Z"/></Svg>
+                     <Svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#000000"><Path d="M173-600h614l-34-120H208l-35 120Zm307-60Zm192 140H289l-11 80h404l-10-80ZM160-160l49-360h-89q-20 0-31.5-16T82-571l57-200q4-13 14-21t24-8h606q14 0 24 8t14 21l57 200q5 19-6.5 35T840-520h-88l48 360h-80l-27-200H267l-27 200h-80Z"/></Svg>
                     }
                     color={colores[(index + mesaIndex) % colores.length]}
                   />

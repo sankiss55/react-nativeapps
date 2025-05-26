@@ -45,7 +45,7 @@ const generarID = (longitud = 12) => {
   setScanned(true);
 
   if (!data.includes('cafeteria') || !data.includes('mesa')) {
-    alert('Código QR no válido');
+    Alert.alert('Error','Código QR no válido');
     return;
   }
 

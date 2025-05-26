@@ -43,6 +43,38 @@ export default function Pedidos_info({ route }) {
     obtenerObservaciones();
   }, [usuarioId, id_usuario_pedido]);
 
+  // Nuevo useEffect para borrar pedidos y observaciones si todos están atendidos
+  useEffect(() => {
+    const borrarTodoSiNoPendientes = async () => {
+      if (
+        pedidosActualizados.length > 0 &&
+        pedidosActualizados.every((p) => p.atendido)
+      ) {
+        try {
+          // Solo borrar los pedidos del usuario en pedidos_usuarios (NO en pedidos global)
+          for (const p of pedidosActualizados) {
+            const pedidoRef = doc(db, "usuarios", usuarioId, "pedidos_usuarios", p.id);
+            await deleteDoc(pedidoRef);
+          }
+          // Borrar todas las observaciones del usuario
+          const observacionesRef = collection(db, "usuarios", usuarioId, "observaciones");
+          const q = query(observacionesRef, where("id_usuario", "==", id_usuario_pedido));
+          const querySnapshot = await getDocs(q);
+          for (const docObs of querySnapshot.docs) {
+            await deleteDoc(docObs.ref);
+          }
+          setPedidosActualizados([]);
+          setObservaciones([]);
+         
+          navigation.goBack();
+        } catch (error) {
+          console.error("Error al borrar pedidos y observaciones:", error);
+        }
+      }
+    };
+    borrarTodoSiNoPendientes();
+  }, [pedidosActualizados, usuarioId, id_usuario_pedido, db, navigation]);
+
   const toggleAtendido = async (pedidoId, currentStatus) => {
     try {
       // Actualizar en la colección "pedidos_usuarios"
@@ -71,9 +103,6 @@ export default function Pedidos_info({ route }) {
       const pedidoRef = doc(db, "usuarios", usuarioId, "pedidos_usuarios", pedidoId);
       await deleteDoc(pedidoRef);
 
-      // Eliminar de la colección "pedidos"
-      const pedidoGlobalRef = doc(db, "pedidos", pedidoId);
-      await deleteDoc(pedidoGlobalRef);
 
       // Actualizar el estado local
       setPedidosActualizados((prevPedidos) =>

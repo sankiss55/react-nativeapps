@@ -17,13 +17,18 @@ const API_URL = "https://api.loyverse.com/v1.0";
 export default function Promociones() {
   const [promocionesCategoryId, setPromocionesCategoryId] = useState(null);
   const [productos, setProductos] = useState([]);
+  const [allProductos, setAllProductos] = useState([]); // <-- Nuevo estado para todos los productos
   const [filteredProductos, setFilteredProductos] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [selectedGroups, setSelectedGroups] = useState([]); // Grupos ya armados
+  const [currentGroupProducts, setCurrentGroupProducts] = useState([]); // Productos seleccionados en el grupo actual
+  const [currentGroupDescription, setCurrentGroupDescription] = useState(""); // Descripción del grupo actual
   const [promotionName, setPromotionName] = useState("");
   const [promotionPrice, setPromotionPrice] = useState("");
+  const [currentStep, setCurrentStep] = useState(1); // Paso actual en la selección de productos
+  const [maxSteps, setMaxSteps] = useState(''); // Número máximo de productos en la promoción
 
   const fetchPromociones = async () => {
     try {
@@ -65,14 +70,52 @@ export default function Promociones() {
       setLoading(false);
     }
   };
-  const createPromotion = () => {
-    const articulos = selectedProducts.map((product) => ({
-      articulo: {
-        id_articulo: product.id,
-        nombre: product.item_name,
-      },
-      descripcion: product.description || "Sin descripción",
-    }));
+  const createPromotion = (groups) => {
+    const articulos = groups.map((group) => {
+      // Si hay varias opciones seleccionadas en un producto
+      if (
+        group.grupo.length === 1 &&
+        group.grupo[0].opciones?.some((o) => o.selected)
+      ) {
+        const opcionesSeleccionadas = group.grupo[0].opciones.filter((o) => o.selected);
+        return {
+          articulo: {
+            opciones: opcionesSeleccionadas.map((opcion) => ({
+              id_articulo: opcion.id,
+              precio: opcion.price,
+              nombre: opcion.item_name,
+              descripcion: opcion.description || "Sin descripción",
+            })),
+          },
+          descripcion: group.descripcion || group.grupo[0].descripcion || "Elige una opción.",
+        };
+      }
+      // Si es un solo producto sin opciones seleccionadas
+      if (group.grupo.length === 1) {
+        const prod = group.grupo[0];
+        return {
+          articulo: {
+            id_articulo: prod.id,
+            precio: prod.precio,
+            nombre: prod.nombre,
+            descripcion: prod.descripcion,
+          },
+          descripcion: group.descripcion || prod.descripcion || "",
+        };
+      }
+      // Si hay varios productos en el grupo (sin opciones)
+      return {
+        articulo: {
+          opciones: group.grupo.map((prod) => ({
+            id_articulo: prod.id,
+            precio: prod.precio,
+            nombre: prod.nombre,
+            descripcion: prod.descripcion,
+          })),
+        },
+        descripcion: group.descripcion || "Elige una opción.",
+      };
+    });
 
     const promotionData = {
       articulos,
@@ -82,17 +125,11 @@ export default function Promociones() {
     console.log("Promoción creada:", JSON.stringify(promotionData, null, 2));
     Alert.alert("Promoción creada", "La promoción se ha creado exitosamente.");
 
-    // Pasar promotionData como argumento
     createProductInLoyverse(promotionData).then(() => {
-      // Traer los productos nuevamente después de crear la promoción
       fetchPromociones();
     });
 
-    // Limpiar los datos de la ventana flotante
-    setPromotionName("");
-    setPromotionPrice("");
-    setSelectedProducts([]);
-    setModalVisible(false);
+    resetModal();
   };
 
   const createProductInLoyverse = async (promotionData) => {
@@ -150,7 +187,7 @@ export default function Promociones() {
 
       const productosResp = await fetch(`${API_URL}/items`, { headers });
       const productosData = await productosResp.json();
-      setProductos(productosData.items);
+      setAllProductos(productosData.items); // <-- Guardar todos los productos
     } catch (error) {
       console.error("Error al obtener productos:", error);
     }
@@ -173,11 +210,95 @@ export default function Promociones() {
     }
   };
 
-  const toggleProductSelection = (product) => {
-    if (selectedProducts.includes(product)) {
-      setSelectedProducts(selectedProducts.filter((p) => p !== product));
+  const handleSetMaxSteps = (steps) => {
+    const parsedSteps = parseInt(steps, 10);
+    if (parsedSteps > 0) {
+      setMaxSteps(parsedSteps+1);
+      setCurrentStep(2); // Avanzar al paso de selección del primer producto
+      setSelectedGroups([]); // Limpiar selección previa
     } else {
-      setSelectedProducts([...selectedProducts, product]);
+      Alert.alert("Error", "Por favor, ingresa un número válido.");
+    }
+  };
+
+  // Reiniciar todo al cancelar o finalizar
+  const resetModal = () => {
+    setPromotionName("");
+    setPromotionPrice("");
+    setMaxSteps('');
+    setCurrentStep(1);
+    setSelectedGroups([]);
+    setCurrentGroupProducts([]);
+    setCurrentGroupDescription("");
+    setModalVisible(false);
+    fetchAllProducts();
+  };
+
+  // Seleccionar/deseleccionar productos SOLO para el grupo actual
+  const toggleProductSelection = (product) => {
+    const isSelected = currentGroupProducts.some((p) => p.id === product.id);
+    if (isSelected) {
+      setCurrentGroupProducts((prev) => prev.filter((p) => p.id !== product.id));
+    } else {
+      const updatedProduct = {
+        id: product.id,
+        nombre: product.item_name,
+        precio: product.variants?.[0]?.default_price || 0,
+        descripcion: product.description || "Sin descripción",
+        opciones: product.variants?.map((variant) => ({
+          id: variant.variant_id,
+          item_name: variant.name || product.item_name,
+          price: variant.default_price || 0,
+          description: variant.description || product.description || "Sin descripción",
+          selected: false,
+        })) || [],
+      };
+      setCurrentGroupProducts((prev) => [...prev, updatedProduct]);
+    }
+  };
+
+  // Seleccionar/deseleccionar opciones dentro de un producto del grupo actual
+  const toggleOptionSelection = (productId, optionId) => {
+    setCurrentGroupProducts((prev) =>
+      prev.map((product) => {
+        if (product.id === productId) {
+          return {
+            ...product,
+            opciones: product.opciones.map((opcion) =>
+              opcion.id === optionId
+                ? { ...opcion, selected: !opcion.selected }
+                : opcion
+            ),
+          };
+        }
+        return product;
+      })
+    );
+  };
+
+  // Guardar el grupo actual y pasar al siguiente
+  const handleNextStep = () => {
+    if (currentGroupProducts.length === 0) {
+      Alert.alert("Selecciona al menos un producto para este grupo.");
+      return;
+    }
+    setSelectedGroups((prev) => [
+      ...prev,
+      {
+        grupo: currentGroupProducts,
+        descripcion: currentGroupDescription,
+      },
+    ]);
+    setCurrentGroupProducts([]);
+    setCurrentGroupDescription("");
+    if (currentStep < maxSteps) {
+      setCurrentStep(currentStep + 1);
+    } else if (currentStep === maxSteps) {
+      // Último grupo, llamar a createPromotion
+      createPromotion([
+        ...selectedGroups,
+        { grupo: currentGroupProducts, descripcion: currentGroupDescription },
+      ]);
     }
   };
 
@@ -205,6 +326,30 @@ export default function Promociones() {
       console.error("Error al eliminar la promoción:", error);
       Alert.alert("Error", "Ocurrió un error al eliminar la promoción.");
     }
+  };
+
+  const handleCancel = () => {
+    setModalVisible(false);
+    setPromotionName("");
+    setPromotionPrice("");
+    setMaxSteps('');
+    setCurrentStep(1);
+    setSelectedGroups([]);
+    setCurrentGroupProducts([]);
+    setCurrentGroupDescription("");
+    fetchAllProducts(); // Restaurar la lista completa de productos
+  };
+
+  // Obtener IDs de productos ya seleccionados en grupos anteriores
+  const getSelectedProductIds = () => {
+    return selectedGroups.flatMap(group => group.grupo.map(prod => prod.id));
+  };
+
+  // Filtrar productos disponibles para el grupo actual (sin repetidos)
+  const getAvailableProductsForCurrentGroup = () => {
+    const selectedIds = getSelectedProductIds();
+    // Usar allProductos en vez de productos
+    return allProductos.filter(prod => !selectedIds.includes(prod.id));
   };
 
   useEffect(() => {
@@ -261,41 +406,118 @@ export default function Promociones() {
       <Modal visible={modalVisible} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.title}>Nueva Promoción</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nombre de la promoción"
-              value={promotionName}
-              onChangeText={setPromotionName}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Precio de la promoción"
-              keyboardType="numeric"
-              value={promotionPrice}
-              onChangeText={setPromotionPrice}
-            />
-            <View style={styles.productListContainer}>
-              <FlatList
-                data={productos}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.row,
-                      selectedProducts.includes(item) && styles.selectedRow,
-                    ]}
-                    onPress={() => toggleProductSelection(item)}
-                  >
-                    <Text style={styles.itemName}>{item.item_name}</Text>
-                  </TouchableOpacity>
-                )}
-              />
-            </View>
-            <Button title="Crear Promoción" onPress={createPromotion} />
+            {currentStep === 1 && (
+              <>
+                <Text style={styles.title}>Nueva Promoción</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nombre de la promoción"
+                  value={promotionName}
+                  onChangeText={setPromotionName}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Precio de la promoción"
+                  keyboardType="numeric"
+                  value={promotionPrice}
+                  onChangeText={setPromotionPrice}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="¿Cuántos grupos de productos tendrá la promoción?"
+                  keyboardType="numeric"
+                  value={String(maxSteps)}
+                  onChangeText={(text) => setMaxSteps(parseInt(text) )}
+                />
+                <Button
+                  title="Siguiente"
+                  onPress={() => {
+                    if (!promotionName.trim()) {
+                      Alert.alert("Error", "Por favor ingresa un nombre para la promoción");
+                      return;
+                    }
+                    if (!promotionPrice.trim()) {
+                      Alert.alert("Error", "Por favor ingresa un precio para la promoción");
+                      return;
+                    }
+                    handleSetMaxSteps(maxSteps);
+                    fetchAllProducts(); // Asegurar que tenemos todos los productos disponibles
+                  }}
+                />
+              </>
+            )}
+            {currentStep > 1 && currentStep <= maxSteps && (
+              <>
+                <Text style={styles.title}>
+                  Selecciona productos para el grupo #{currentStep - 1}
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Descripción de este grupo (opcional)"
+                  value={currentGroupDescription}
+                  onChangeText={setCurrentGroupDescription}
+                />
+                <FlatList
+                  // Cambia 'productos' por la función filtrada
+                  data={getAvailableProductsForCurrentGroup()}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item }) => {
+                    const isSelected = currentGroupProducts.some((p) => p.id === item.id);
+                    return (
+                      <TouchableOpacity
+                        style={[
+                          styles.row,
+                          isSelected && styles.selectedRow,
+                        ]}
+                        onPress={() => toggleProductSelection(item)}
+                      >
+                        <Text style={styles.itemName}>{item.item_name}</Text>
+                        {/* Opciones solo si el producto está seleccionado */}
+                        {isSelected && currentGroupProducts.find((p) => p.id === item.id)?.opciones.length > 0 && (
+                          <View style={styles.optionsContainer}>
+                            {currentGroupProducts
+                              .find((p) => p.id === item.id)
+                              .opciones.map((opcion) => {
+                                const isOptionSelected = opcion.selected;
+                                return (
+                                  <TouchableOpacity
+                                    key={opcion.id}
+                                    style={[
+                                      styles.optionRow,
+                                      isOptionSelected && styles.selectedOptionRow,
+                                    ]}
+                                    onPress={() =>
+                                      toggleOptionSelection(item.id, opcion.id)
+                                    }
+                                  >
+                                    <Text style={styles.optionText}>
+                                      {opcion.item_name}
+                                    </Text>
+                                    <Text style={styles.optionPrice}>
+                                      ${opcion.price.toFixed(2)}
+                                    </Text>
+                                  </TouchableOpacity>
+                                );
+                              })}
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
+                <Button
+                  title={
+                    currentStep < maxSteps
+                      ? "Siguiente grupo"
+                      : "Finalizar selección"
+                  }
+                  onPress={handleNextStep}
+                />
+              </>
+            )}
             <TouchableOpacity
               style={styles.cancelButton}
-              onPress={() => setModalVisible(false)}
+              onPress={resetModal}
             >
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
@@ -371,7 +593,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: "85%", // Ajustar el ancho del modal
-    height:'60%',
+    height: "60%",
     backgroundColor: "#fff",
     padding: 20,
     borderRadius: 15, // Bordes redondeados
@@ -433,5 +655,31 @@ const styles = StyleSheet.create({
   },
   selectedRow: {
     backgroundColor: "#007BFF",
+    borderRadius: 5,
+    padding: 5,
+  },
+  optionsContainer: {
+    marginTop: 5,
+    paddingLeft: 10,
+  },
+  optionRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 5,
+  },
+  selectedOptionRow: {
+    backgroundColor: "#FFD700", // Amarillo para opciones seleccionadas
+    borderRadius: 5,
+    padding: 5,
+  },
+  optionText: {
+    fontSize: 14,
+    color: "#555",
+  },
+  optionPrice: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
   },
 });
